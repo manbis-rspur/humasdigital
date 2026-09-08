@@ -24,7 +24,7 @@ export default async function HalamanArsip() {
   const { data } = await supabase
     .from("publikasi")
     .select(
-      "id, judul, jenis, isi, tautan_docs, diunggah_pada, diubah_pada, pengunggah:diunggah_oleh(nama), penyunting:diubah_oleh(nama)",
+      "id, judul, jenis, isi, tautan_docs, berkas_nama, diunggah_pada, diubah_pada, pengunggah:diunggah_oleh(nama), penyunting:diubah_oleh(nama)",
     )
     .order("diunggah_pada", { ascending: false })
     .limit(200);
@@ -72,8 +72,8 @@ export default async function HalamanArsip() {
                   </p>
                   {d.diubah_pada && penyunting && (
                     <p className="mt-0.5 text-xs text-hijau">
-                      Disunting {waktu.format(new Date(d.diubah_pada))} oleh{" "}
-                      {penyunting.nama}
+                      {d.isi === null ? "Revisi diunggah" : "Disunting"}{" "}
+                      {waktu.format(new Date(d.diubah_pada))} oleh {penyunting.nama}
                     </p>
                   )}
                 </div>
