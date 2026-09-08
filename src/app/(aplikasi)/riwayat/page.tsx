@@ -57,6 +57,7 @@ export default async function HalamanRiwayat({
             hasil={terbuka.hasil}
             namaBerkas="dokumen-humas"
             riwayatId={terbuka.id}
+            jenisArsip={terbuka.modul_judul}
           />
         </div>
       )}
