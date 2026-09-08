@@ -24,7 +24,7 @@ export default async function HalamanArsip() {
   const { data } = await supabase
     .from("publikasi")
     .select(
-      "id, judul, jenis, isi, diunggah_pada, diubah_pada, pengunggah:diunggah_oleh(nama), penyunting:diubah_oleh(nama)",
+      "id, judul, jenis, isi, tautan_docs, diunggah_pada, diubah_pada, pengunggah:diunggah_oleh(nama), penyunting:diubah_oleh(nama)",
     )
     .order("diunggah_pada", { ascending: false })
     .limit(200);
@@ -77,6 +77,17 @@ export default async function HalamanArsip() {
                     </p>
                   )}
                 </div>
+
+                {d.tautan_docs && (
+                  <a
+                    href={d.tautan_docs}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded border border-garis px-3 py-1.5 text-xs font-medium text-tinta-2 hover:bg-permukaan-2"
+                  >
+                    Google Docs
+                  </a>
+                )}
 
                 {d.isi !== null && (
                   <Link
