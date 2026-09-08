@@ -1,26 +1,44 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@theme {
+  --color-kertas: #f4f6f3;
+  --color-permukaan: #ffffff;
+  --color-permukaan-2: #ebefea;
+  --color-tinta: #151c19;
+  --color-tinta-2: #3d4842;
+  --color-tinta-3: #5f6b64;
+  --color-garis: #dae0da;
+  --color-hijau: #1b6156;
+  --color-hijau-muda: #dce9e5;
+  --color-oker: #7e5615;
+  --color-merah: #8c3a34;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-kertas);
+  color: var(--color-tinta);
 }
+
+/* Tampilan dokumen hasil susunan AI. Ditulis di sini, bukan sebagai
+   kelas di tiap tempat, karena isinya markdown yang tag-nya tidak
+   bisa diberi kelas satu per satu. */
+.dokumen { font-size: 0.9rem; line-height: 1.65; color: var(--color-tinta-2); }
+.dokumen h1, .dokumen h2, .dokumen h3 { color: var(--color-tinta); font-weight: 600; line-height: 1.3; }
+.dokumen h1 { font-size: 1.3rem; margin: 1.4rem 0 0.6rem; }
+.dokumen h2 { font-size: 1.1rem; margin: 1.3rem 0 0.5rem; }
+.dokumen h3 { font-size: 1rem; margin: 1.1rem 0 0.4rem; }
+.dokumen p { margin: 0.6rem 0; }
+.dokumen ul, .dokumen ol { margin: 0.6rem 0 0.6rem 1.2rem; }
+.dokumen ul { list-style: disc; }
+.dokumen ol { list-style: decimal; }
+.dokumen li { margin: 0.25rem 0; }
+.dokumen strong { color: var(--color-tinta); font-weight: 600; }
+.dokumen blockquote { border-left: 2px solid var(--color-garis); padding-left: 0.9rem; color: var(--color-tinta-3); }
+.dokumen code { background: var(--color-permukaan-2); padding: 0.1rem 0.3rem; border-radius: 3px; font-size: 0.85em; }
+.dokumen table { border-collapse: collapse; width: 100%; margin: 0.9rem 0; font-size: 0.82rem; }
+.dokumen th, .dokumen td { border: 1px solid var(--color-garis); padding: 0.45rem 0.6rem; text-align: left; vertical-align: top; }
+.dokumen th { background: var(--color-permukaan-2); color: var(--color-tinta); font-weight: 600; }
+.dokumen hr { border: 0; border-top: 1px solid var(--color-garis); margin: 1.2rem 0; }
