@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { keluar } from "@/lib/auth-actions";
-import { penggunaBerhak } from "@/lib/akses";
+import { bolehSosmed, penggunaBerhak } from "@/lib/akses";
 import { bacaIdentitas } from "@/lib/identitas";
 import { gayaWarna } from "@/lib/gaya-warna";
 
@@ -10,9 +10,13 @@ const MENU = [
   { href: "/tampilan", label: "Tampilan" },
 ] as const;
 
+/** Hanya untuk Digital Marketing. */
+const MENU_SOSMED = { href: "/laporan", label: "Laporan Media Sosial" } as const;
+
 export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
   const pengguna = await penggunaBerhak();
   const identitas = await bacaIdentitas();
+  const menu = (await bolehSosmed()) ? [MENU[0], MENU_SOSMED, MENU[1], MENU[2]] : [...MENU];
 
   return (
     <div className="flex min-h-full flex-col">
@@ -38,7 +42,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
           </Link>
 
           <nav className="flex flex-wrap gap-1">
-            {MENU.map((m) => (
+            {menu.map((m) => (
               <Link
                 key={m.href}
                 href={m.href}

@@ -44,3 +44,15 @@ export async function penggunaBerhak(): Promise<PenggunaAktif> {
   await wajibHumas();
   return pengguna;
 }
+
+/** Izin menyusun laporan bulanan media sosial — khusus Digital Marketing. */
+export async function bolehSosmed(): Promise<boolean> {
+  return bolehAkses("sosmed");
+}
+
+export async function wajibSosmed(): Promise<PenggunaAktif> {
+  const pengguna = await getPenggunaAktif();
+  if (!pengguna) redirect("/login");
+  if (!(await bolehAkses("sosmed"))) redirect("/tanpa-akses");
+  return pengguna;
+}
