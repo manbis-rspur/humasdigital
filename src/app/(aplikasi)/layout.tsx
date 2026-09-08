@@ -7,6 +7,7 @@ import { gayaWarna } from "@/lib/gaya-warna";
 const MENU = [
   { href: "/", label: "Modul" },
   { href: "/riwayat", label: "Riwayat Dokumen" },
+  { href: "/tampilan", label: "Tampilan" },
 ] as const;
 
 export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
