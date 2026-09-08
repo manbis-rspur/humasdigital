@@ -7,7 +7,6 @@ import { gayaWarna } from "@/lib/gaya-warna";
 const MENU = [
   { href: "/", label: "Modul" },
   { href: "/riwayat", label: "Riwayat Dokumen" },
-  { href: "/arsip", label: "Arsip & Koreksi" },
   { href: "/tampilan", label: "Tampilan" },
 ] as const;
 
