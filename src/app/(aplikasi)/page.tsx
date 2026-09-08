@@ -11,10 +11,6 @@ export default async function HalamanHumas() {
     .from("modul_ai")
     .select("id, judul, deskripsi, kategori, kolom, bawaan, urutan")
     .eq("aktif", true)
-    // Balasan Ulasan & Komplain Pasien sengaja tetap tinggal di
-    // Dashboard Manajemen Bisnis, supaya Koordinator bisa
-    // memakainya tanpa membuka dashboard ini.
-    .neq("kategori", "Layanan Pelanggan")
     .order("urutan")
     .order("id");
 
