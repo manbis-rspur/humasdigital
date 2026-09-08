@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { kirimKeArsip } from "@/lib/arsip-actions";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -16,15 +17,28 @@ export function TampilHasil({
   hasil,
   namaBerkas = "dokumen",
   riwayatId = null,
+  jenisArsip,
 }: {
   judul: string;
   hasil: string;
   namaBerkas?: string;
   riwayatId?: number | null;
+  /** Nama modul, dipakai sebagai jenis dokumen saat dikirim ke arsip. */
+  jenisArsip?: string;
 }) {
   const [mentah, setMentah] = useState(false);
   const [kabar, setKabar] = useState<string | null>(null);
+  const [mengirim, setMengirim] = useState(false);
+  const [terkirim, setTerkirim] = useState(false);
   const pratinjau = useRef<HTMLDivElement>(null);
+
+  async function kirim() {
+    setMengirim(true);
+    const h = await kirimKeArsip(judul, jenisArsip ?? "Lainnya", "", hasil);
+    beriKabar(h.pesan);
+    if (h.ok) setTerkirim(true);
+    setMengirim(false);
+  }
 
   function beriKabar(teks: string) {
     setKabar(teks);
@@ -86,6 +100,20 @@ export function TampilHasil({
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-medium">{judul}</h2>
         <div className="flex flex-wrap gap-2">
+          {jenisArsip && (
+            <button
+              type="button"
+              onClick={kirim}
+              disabled={mengirim || terkirim}
+              className="rounded bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60"
+            >
+              {terkirim
+                ? "Sudah dikirim"
+                : mengirim
+                  ? "Mengirim…"
+                  : "Kirim ke Koordinator"}
+            </button>
+          )}
           {riwayatId !== null && (
             <a
               href={`/riwayat/${riwayatId}/word`}
@@ -126,12 +154,11 @@ export function TampilHasil({
         </pre>
       </div>
 
-      {riwayatId !== null && (
+      {jenisArsip && (
         <p className="text-xs text-tinta-3">
-          Untuk dibagikan ke unit lain: unduh berkas Word-nya, unggah ke Google
-          Drive, lalu buka dengan Google Docs — tabelnya ikut utuh dan bisa
-          disunting bersama. Atau tekan Salin untuk Google Docs, lalu tempel ke
-          dokumen kosong.
+          Kirim ke Koordinator menaruh dokumen ini di Arsip Publikasi pada
+          Dashboard Manajemen Bisnis, sebagai teks yang bisa beliau sunting
+          langsung — dan suntingannya terlihat lagi di menu Arsip di sini.
         </p>
       )}
 

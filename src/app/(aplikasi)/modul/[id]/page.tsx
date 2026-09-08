@@ -49,6 +49,7 @@ export default async function HalamanModul({ params }: PageProps<"/modul/[id]">)
         modulId={modul.id}
         kolom={bacaKolom(modul.kolom)}
         namaBerkas={namaBerkas}
+        namaModul={modul.judul}
       />
     </div>
   );

@@ -112,10 +112,12 @@ export function FormJalankan({
   modulId,
   kolom,
   namaBerkas,
+  namaModul,
 }: {
   modulId: number;
   kolom: Kolom[];
   namaBerkas: string;
+  namaModul: string;
 }) {
   const [hasil, kirim, sedang] = useActionState(jalankanModul, awal);
 
@@ -155,6 +157,7 @@ export function FormJalankan({
           hasil={hasil.hasil}
           namaBerkas={namaBerkas}
           riwayatId={hasil.riwayatId}
+          jenisArsip={namaModul}
         />
       )}
     </div>
