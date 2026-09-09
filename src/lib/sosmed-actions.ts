@@ -77,12 +77,15 @@ export async function simpanAngka(_s: Hasil, formData: FormData): Promise<Hasil>
     for (const u of UKURAN) isi[p][u.kunci] = angka(formData, `${p}_${u.kunci}`);
   }
 
+  const tenggat = String(formData.get("tenggat") ?? "").trim();
+
   const supabase = await createClient();
   const { error } = await supabase
     .from("laporan_sosmed")
     .update({
       angka: isi,
       catatan: String(formData.get("catatan") ?? "").trim() || null,
+      tenggat: tenggat || null,
       diubah_pada: new Date().toISOString(),
     })
     .eq("id", id);

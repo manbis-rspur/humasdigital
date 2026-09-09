@@ -87,7 +87,9 @@ export async function bacaLonceng(): Promise<IsiLonceng> {
         .limit(BANYAK),
       supabase
         .from("publikasi")
-        .select("id, judul, jenis, diunggah_pada, diunggah_oleh, pengguna(nama)")
+        .select(
+          "id, judul, jenis, diunggah_pada, diunggah_oleh, status_tinjauan, catatan_tinjauan, ditinjau_pada, ditinjau_oleh, pengguna:diunggah_oleh(nama), peninjau:ditinjau_oleh(nama)",
+        )
         .order("diunggah_pada", { ascending: false })
         .limit(BANYAK),
     ]);
@@ -131,6 +133,22 @@ export async function bacaLonceng(): Promise<IsiLonceng> {
       tautan: "/riwayat",
       olehSaya: p.diunggah_oleh === pengguna.id,
     });
+
+    // Inilah kabar yang paling ditunggu di sini: jawaban Koordinator
+    // atas dokumen yang sudah dikirim.
+    if (p.ditinjau_pada && p.status_tinjauan !== "Menunggu") {
+      daftar.push({
+        kunci: `tinjauan-${p.id}-${p.ditinjau_pada}`,
+        ikon: p.status_tinjauan === "Disetujui" ? "centang" : "peringatan",
+        judul: `${potong(p.judul, 40)} — ${p.status_tinjauan}`,
+        rincian: p.catatan_tinjauan
+          ? potong(p.catatan_tinjauan)
+          : `Ditinjau ${nama(p.peninjau) || "Koordinator"}`,
+        waktu: p.ditinjau_pada,
+        tautan: "/riwayat",
+        olehSaya: false,
+      });
+    }
   }
 
   daftar.sort((a, b) => b.waktu.localeCompare(a.waktu));

@@ -4,9 +4,41 @@ import { wajibSosmed } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { hapusKonten } from "@/lib/sosmed-actions";
 import { TampilHasil } from "@/components/tampil-hasil";
+import Ikon from "@/components/ikon";
 import { NAMA_BULAN, angkaRapi, interaksi, type Konten } from "@/lib/sosmed";
 import { Pembaca } from "./pembaca";
 import { FormAngka, FormKonten, RingkasKonten, TombolSusun } from "./penyusun";
+
+/**
+ * Penanda tenggat.
+ *
+ * Berubah merah begitu lewat dan naskahnya belum tersusun — sebelum
+ * itu tidak perlu menakut-nakuti siapa pun.
+ */
+function PenandaTenggat({ tenggat, selesai }: { tenggat: string; selesai: boolean }) {
+  const lewat = !selesai && new Date(tenggat) < new Date(new Date().toDateString());
+  const tulisan = new Date(tenggat).toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <p
+      className={`mt-2 flex w-fit items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium ${
+        lewat
+          ? "border-merah bg-[#f6e7e6] text-merah"
+          : selesai
+            ? "border-hijau bg-hijau-muda/60 text-hijau"
+            : "border-garis bg-permukaan-2 text-tinta-3"
+      }`}
+    >
+      <Ikon nama="waktu" ukuran={13} />
+      {selesai ? `Tenggat ${tulisan} — naskah sudah tersusun` : `Ditunggu sampai ${tulisan}`}
+      {lewat && " — sudah lewat"}
+    </p>
+  );
+}
 
 export default async function HalamanLaporanBulan({
   params,
@@ -42,6 +74,7 @@ export default async function HalamanLaporanBulan({
           {NAMA_BULAN[l.bulan]} {l.tahun}
         </h1>
         <p className="mt-1 text-tinta-2">Instagram dan TikTok {l.akun}</p>
+        {l.tenggat && <PenandaTenggat tenggat={l.tenggat} selesai={Boolean(l.hasil)} />}
         <RingkasKonten daftar={konten} />
       </div>
 
@@ -51,6 +84,7 @@ export default async function HalamanLaporanBulan({
         id={l.id}
         angka={(l.angka ?? {}) as Record<string, Record<string, number>>}
         catatan={l.catatan}
+        tenggat={l.tenggat}
       />
 
       {konten.length > 0 && (

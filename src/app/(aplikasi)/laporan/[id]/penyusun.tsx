@@ -12,10 +12,13 @@ export function FormAngka({
   id,
   angka,
   catatan,
+  tenggat,
 }: {
   id: number;
   angka: Record<string, Record<string, number>>;
   catatan: string | null;
+  /** Kapan laporan bulan ini ditunggu Koordinator. */
+  tenggat: string | null;
 }) {
   const [hasil, kirim, sedang] = useActionState(simpanAngka, hasilAwal);
 
@@ -45,6 +48,21 @@ export function FormAngka({
           </div>
         ))}
       </div>
+
+      <label className="flex flex-wrap items-center gap-3 border-t border-garis pt-4">
+        <span className="text-xs font-semibold uppercase tracking-[0.13em] text-tinta-3">
+          Tenggat laporan
+        </span>
+        <input
+          type="date"
+          name="tenggat"
+          defaultValue={tenggat ?? ""}
+          className={gaya}
+        />
+        <span className="text-xs text-tinta-3">
+          Kapan laporan ini ditunggu Koordinator.
+        </span>
+      </label>
 
       <label className="flex flex-col gap-1.5">
         <span className="text-xs text-tinta-3">

@@ -17,6 +17,17 @@ export default async function HalamanHumas() {
 
   const modul = data ?? [];
 
+  // Dokumen yang dikembalikan Koordinator dengan catatan. Ditaruh di
+  // halaman depan, bukan cuma di lonceng: kabar di lonceng hilang
+  // begitu dibaca, sedangkan pekerjaan yang belum dibereskan harus
+  // tetap kelihatan sampai benar-benar selesai.
+  const { data: dikembalikan } = await supabase
+    .from("publikasi")
+    .select("id, judul, jenis, catatan_tinjauan, tenggat, ditinjau_pada")
+    .eq("status_tinjauan", "Perlu revisi")
+    .order("ditinjau_pada", { ascending: false })
+    .limit(5);
+
   // Dikelompokkan per kategori, urut sesuai kemunculan pertamanya —
   // bukan diurutkan menurut abjad, supaya modul pokok tetap di atas.
   const kategori: string[] = [];
@@ -70,6 +81,42 @@ export default async function HalamanHumas() {
           )}
         </div>
       </div>
+
+      {(dikembalikan ?? []).length > 0 && (
+        <section className="flex flex-col gap-3 rounded-xl border border-oker bg-[#fbf6ec] p-5">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-oker">
+            <Ikon nama="peringatan" ukuran={14} />
+            Dikembalikan Koordinator
+          </h2>
+          <ul className="flex flex-col gap-3">
+            {(dikembalikan ?? []).map((d) => (
+              <li key={d.id} className="border-l-2 border-oker pl-3">
+                <p className="text-sm font-medium">
+                  {d.judul}
+                  <span className="ml-2 text-xs font-normal text-tinta-3">{d.jenis}</span>
+                </p>
+                {d.catatan_tinjauan && (
+                  <p className="mt-0.5 text-sm text-tinta-2">{d.catatan_tinjauan}</p>
+                )}
+                {d.tenggat && (
+                  <p className="mt-0.5 text-xs text-tinta-3">
+                    Ditunggu sampai{" "}
+                    {new Date(d.tenggat).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="text-xs text-tinta-3">
+            Perbaiki dokumennya, lalu unggah ulang lewat Dashboard Manajemen
+            Bisnis — versi lama tidak tertimpa.
+          </p>
+        </section>
+      )}
 
       {modul.length === 0 ? (
         <div className="rounded-lg border border-garis bg-permukaan px-5 py-10 text-center">
