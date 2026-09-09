@@ -30,10 +30,42 @@ const ULANGI = 2;
 
 const ALAMAT = "https://generativelanguage.googleapis.com/v1beta/models";
 
+/**
+ * Satu potong kiriman ke Gemini: tulisan biasa, atau berkas utuh
+ * (PDF, tangkapan layar) yang dibaca langsung oleh modelnya.
+ */
+export type Bagian =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } };
+
 export async function susunDenganAI(
   perintah: string,
   instruksiSistem: string,
   suhu = 0.7,
+): Promise<string> {
+  return panggilGemini([{ text: perintah }], instruksiSistem, suhu, false);
+}
+
+/**
+ * Membaca berkas — rekapan Meta, ekspor TikTok Studio, tangkapan
+ * layar — lalu menjawab dalam bentuk JSON.
+ *
+ * Suhunya nol dan jawabannya dikunci ke JSON karena ini pekerjaan
+ * menyalin, bukan mengarang: yang diminta angka yang memang tertulis
+ * di berkasnya, bukan tafsiran.
+ */
+export async function bacaDenganAI(
+  bagian: Bagian[],
+  instruksiSistem: string,
+): Promise<string> {
+  return panggilGemini(bagian, instruksiSistem, 0, true);
+}
+
+async function panggilGemini(
+  bagian: Bagian[],
+  instruksiSistem: string,
+  suhu: number,
+  jsonSaja: boolean,
 ): Promise<string> {
   const kunci = process.env.GEMINI_API_KEY;
 
@@ -55,9 +87,12 @@ export async function susunDenganAI(
             "x-goog-api-key": kunci,
           },
           body: JSON.stringify({
-            contents: [{ parts: [{ text: perintah }] }],
+            contents: [{ parts: bagian }],
             systemInstruction: { parts: [{ text: instruksiSistem }] },
-            generationConfig: { temperature: suhu },
+            generationConfig: {
+              temperature: suhu,
+              ...(jsonSaja ? { responseMimeType: "application/json" } : {}),
+            },
           }),
         });
 

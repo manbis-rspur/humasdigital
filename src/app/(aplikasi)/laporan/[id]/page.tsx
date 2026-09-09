@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hapusKonten } from "@/lib/sosmed-actions";
 import { TampilHasil } from "@/components/tampil-hasil";
 import { NAMA_BULAN, angkaRapi, interaksi, type Konten } from "@/lib/sosmed";
+import { Pembaca } from "./pembaca";
 import { FormAngka, FormKonten, RingkasKonten, TombolSusun } from "./penyusun";
 
 export default async function HalamanLaporanBulan({
@@ -43,6 +44,8 @@ export default async function HalamanLaporanBulan({
         <p className="mt-1 text-tinta-2">Instagram dan TikTok {l.akun}</p>
         <RingkasKonten daftar={konten} />
       </div>
+
+      <Pembaca id={l.id} />
 
       <FormAngka
         id={l.id}
