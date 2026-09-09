@@ -76,11 +76,11 @@ export default async function HalamanHumas() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
-            Humas &amp; Digital Marketing
+            Humas &amp; Pemasaran
           </h1>
           <p className="mt-1 max-w-2xl text-tinta-2">
             {izin === "penuh"
-              ? "Bantuan menyusun siaran pers, kalender konten, rencana acara, dan tanggapan — dikerjakan mesin, diperiksa manusia."
+              ? "Perkakas kerja Humas, Marketing, dan Digital Marketing: menyusun siaran pers, kalender konten, rencana acara, dan tanggapan — dikerjakan mesin, diperiksa manusia."
               : "Seluruh dokumen yang disusun Humas dan Digital Marketing masuk ke Riwayat Dokumen. Modul penyusunnya dipegang mereka; yang terbuka di sini modul layanan pelanggan."}
           </p>
         </div>

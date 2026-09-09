@@ -6,7 +6,7 @@ export default function TanpaAkses() {
       <div className="max-w-md">
         <h1 className="text-2xl font-semibold">Akun Anda tidak berhak</h1>
         <p className="mt-2 text-tinta-2">
-          Dashboard ini hanya untuk Humas dan Digital Marketing. Kalau Anda
+          Dashboard ini untuk Humas, Marketing, dan Digital Marketing. Kalau Anda
           merasa seharusnya berhak, hubungi Admin sistem.
         </p>
         <form action={keluar} className="mt-6">

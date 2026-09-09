@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { wajibMcu } from "@/lib/akses";
+import Ikon from "@/components/ikon";
 import { createClient } from "@/lib/supabase/server";
 import { hitungPenawaran, rupiah, persen, type RincianItem } from "@/lib/mcu";
 
@@ -17,7 +18,7 @@ function warnaStatus(status: string) {
 }
 
 export default async function HalamanMcu() {
-  await wajibMcu();
+  const pengguna = await wajibMcu();
 
   const supabase = await createClient();
   const { data } = await supabase
@@ -49,10 +50,21 @@ export default async function HalamanMcu() {
           </Link>
           <Link
             href="/mcu/baru"
-            className="rounded-lg bg-hijau px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
+            className="flex items-center gap-2 rounded-lg bg-hijau px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
           >
+            <Ikon nama="tambah" ukuran={16} />
             Penawaran baru
           </Link>
+          {pengguna.peran === "Admin" && (
+            <Link
+              href="/mcu/hapus"
+              title="Mengosongkan data penawaran"
+              className="flex items-center gap-2 rounded-lg border border-garis px-3 py-2.5 text-sm font-medium text-tinta-3 hover:bg-permukaan-2"
+            >
+              <Ikon nama="hapus" ukuran={16} />
+              Hapus data
+            </Link>
+          )}
         </div>
       </div>
 

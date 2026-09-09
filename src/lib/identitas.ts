@@ -25,3 +25,33 @@ export async function bacaIdentitas(): Promise<Identitas> {
     warnaUtama: data?.warna_humas ?? null,
   };
 }
+
+
+/**
+ * Kop surat resmi rumah sakit.
+ *
+ * Dibaca dari kolom yang sama dengan yang dipakai Dashboard
+ * Manajemen Bisnis — kop surat milik rumah sakit, bukan milik salah
+ * satu dashboard, jadi tidak boleh ada dua versi yang bisa berbeda.
+ * Diatur di sana, dipakai di sini.
+ */
+export type Kop = {
+  kopUrl: string | null;
+  logoUrl: string | null;
+  alamatKop: string | null;
+};
+
+export async function bacaKop(): Promise<Kop> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("pengaturan_sistem")
+    .select("kop_url, logo_url, alamat_kop")
+    .eq("id", 1)
+    .maybeSingle();
+
+  return {
+    kopUrl: data?.kop_url ?? null,
+    logoUrl: data?.logo_url ?? null,
+    alamatKop: data?.alamat_kop ?? null,
+  };
+}

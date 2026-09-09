@@ -29,7 +29,7 @@ export default async function HalamanMasuk({ searchParams }: PageProps<"/login">
           RSPUR
         </p>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">
-          Humas &amp; Digital Marketing
+          Humas &amp; Pemasaran
         </h1>
         <p className="mt-2 mb-7 text-sm text-tinta-2">
           Masuk memakai email kantor Anda.

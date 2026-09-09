@@ -60,7 +60,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
               <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-tinta-3">
                 RSPUR
               </span>
-              <span className="block font-medium">Humas &amp; Digital Marketing</span>
+              <span className="block font-medium">Humas &amp; Pemasaran</span>
             </span>
           </Link>
 
@@ -92,7 +92,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
 
       <footer className="border-t border-garis px-5 py-4">
         <p className="mx-auto max-w-6xl text-xs text-tinta-3">
-          Humas &amp; Digital Marketing — RS Pertamedika Ummi Rosnati
+          Humas &amp; Pemasaran — RS Pertamedika Ummi Rosnati
         </p>
       </footer>
     </div>

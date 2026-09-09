@@ -15,8 +15,8 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Humas & Digital Marketing RSPUR",
-  description: "Perkakas penyusun dokumen Humas & Digital Marketing RSPUR",
+  title: "Humas & Pemasaran RSPUR",
+  description: "Perkakas kerja Humas, Marketing, dan Digital Marketing RSPUR",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
