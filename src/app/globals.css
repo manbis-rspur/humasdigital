@@ -15,11 +15,106 @@
 
   --font-sans: var(--font-plex-sans), system-ui, sans-serif;
   --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+
+  /* Bayangan tipis. Rumah sakit bukan tempat yang pantas dihias
+     bayangan tebal — cukup untuk memisahkan kartu dari latar, tidak
+     sampai terlihat melayang. */
+  --shadow-lembut: 0 1px 2px rgb(21 28 25 / 0.04), 0 1px 3px rgb(21 28 25 / 0.05);
+  --shadow-angkat: 0 2px 4px rgb(21 28 25 / 0.05), 0 8px 20px rgb(21 28 25 / 0.07);
 }
 
 body {
   background: var(--color-kertas);
   color: var(--color-tinta);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ------------------------------------------------------------------
+   Tanda tombol tertekan.
+
+   Warna latar yang berubah saat ditekan saja tidak cukup: kalau jari
+   atau kursor cepat, perubahannya lewat begitu saja dan orang tidak
+   yakin tekanannya masuk, lalu menekan dua kali. Kedipan ini berjalan
+   penuh sepanjang 0,3 detik walaupun tombolnya cuma disentil.
+
+   Kelasnya dipasang oleh satu penyimak di seluruh halaman, bukan
+   ditulis ulang di tiap tombol — supaya tombol yang dibuat nanti pun
+   ikut berkedip tanpa perlu diingat-ingat.
+------------------------------------------------------------------ */
+@keyframes kedip-tekan {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 var(--warna-kedip);
+  }
+  30% {
+    transform: scale(0.965);
+    box-shadow: 0 0 0 4px var(--warna-kedip);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(0 0 0 / 0);
+  }
+}
+
+.ditekan {
+  --warna-kedip: color-mix(in srgb, var(--color-hijau) 30%, transparent);
+  animation: kedip-tekan 0.3s ease-out;
+}
+
+button,
+[role="button"],
+a,
+summary {
+  transition: background-color 0.15s ease, border-color 0.15s ease,
+    color 0.15s ease, opacity 0.15s ease;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+/* Bingkai fokus yang sama di mana-mana, supaya yang menyusuri
+   halaman pakai papan ketik selalu tahu sedang di mana. */
+:focus-visible {
+  outline: 2px solid var(--color-hijau);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Kabar baru di lonceng. Denyutnya pelan — ini pemberitahuan,
+   bukan alarm. */
+@keyframes denyut-kabar {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-merah) 45%, transparent); }
+  55%      { box-shadow: 0 0 0 5px rgb(0 0 0 / 0); }
+}
+
+.denyut {
+  animation: denyut-kabar 2.4s ease-out infinite;
+}
+
+/* Kabar yang baru masuk digeser turun sebentar saat daftarnya
+   dibuka, supaya mata tahu daftarnya memang berganti isi. */
+@keyframes masuk-halus {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.masuk-halus {
+  animation: masuk-halus 0.18s ease-out both;
+}
+
+/* Sebagian orang pusing melihat gerakan. Hormati setelan itu:
+   tanda tekan tetap ada, tapi lewat warna, bukan gerak. */
+@media (prefers-reduced-motion: reduce) {
+  .ditekan,
+  .denyut,
+  .masuk-halus {
+    animation: none;
+  }
+  .ditekan {
+    box-shadow: 0 0 0 4px var(--warna-kedip);
+  }
 }
 
 /* Tampilan dokumen hasil susunan AI. Ditulis di sini, bukan sebagai

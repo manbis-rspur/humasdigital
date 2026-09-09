@@ -11,7 +11,11 @@ export default async function HalamanMasuk({ searchParams }: PageProps<"/login">
     <main className="flex flex-1 items-center justify-center px-5 py-12">
       {identitas.warnaUtama && <style>{gayaWarna(identitas.warnaUtama)}</style>}
 
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-garis bg-permukaan p-7 shadow-angkat">
+        {/* Garis warna rumah sakit di kepala kartu, sama seperti yang
+            ada di bibir atas dashboard. */}
+        <div className="-mx-7 -mt-7 mb-6 h-1 rounded-t-2xl bg-hijau" />
+
         {identitas.logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -24,10 +28,12 @@ export default async function HalamanMasuk({ searchParams }: PageProps<"/login">
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-tinta-3">
           RSPUR
         </p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-tight">
+        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
           Humas &amp; Digital Marketing
         </h1>
-        <p className="mt-2 mb-8 text-tinta-2">Masuk memakai email kantor Anda.</p>
+        <p className="mt-2 mb-7 text-sm text-tinta-2">
+          Masuk memakai email kantor Anda.
+        </p>
 
         <FormMasuk lanjut={lanjut} />
       </div>

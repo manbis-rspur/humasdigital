@@ -125,7 +125,7 @@ export function FormIdentitas({
         </h2>
 
         <div className="flex flex-wrap items-center gap-5">
-          <div className="flex h-24 w-24 items-center justify-center rounded border border-garis bg-permukaan p-2">
+          <div className="flex h-24 w-24 items-center justify-center rounded-lg border border-garis bg-permukaan p-2">
             {logo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={logo} alt="Logo RSPUR" className="max-h-full max-w-full object-contain" />
@@ -140,7 +140,7 @@ export function FormIdentitas({
                 type="button"
                 disabled={sibuk}
                 onClick={() => berkasRef.current?.click()}
-                className="rounded bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+                className="rounded-lg bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
               >
                 {sibuk ? "Memproses…" : logo ? "Ganti logo" : "Unggah logo"}
               </button>
@@ -149,7 +149,7 @@ export function FormIdentitas({
                   type="button"
                   disabled={sibuk}
                   onClick={buangLogo}
-                  className="rounded border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2 disabled:opacity-60"
+                  className="rounded-lg border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2 disabled:opacity-60"
                 >
                   Hapus logo
                 </button>

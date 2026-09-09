@@ -12,7 +12,7 @@ export default function TanpaAkses() {
         <form action={keluar} className="mt-6">
           <button
             type="submit"
-            className="rounded bg-hijau px-4 py-2.5 font-medium text-white"
+            className="rounded-lg bg-hijau px-4 py-2.5 font-medium text-white"
           >
             Keluar
           </button>

@@ -21,7 +21,7 @@ export function FormMasuk({ lanjut }: { lanjut: string }) {
           type="email"
           autoComplete="username"
           required
-          className="rounded border border-garis bg-permukaan px-3 py-2 outline-none focus:border-hijau focus:ring-2 focus:ring-hijau-muda"
+          className="rounded-lg border border-garis bg-kertas px-3 py-2 outline-none focus:border-hijau focus:bg-permukaan focus:ring-2 focus:ring-hijau-muda"
         />
       </label>
 
@@ -34,12 +34,12 @@ export function FormMasuk({ lanjut }: { lanjut: string }) {
           type="password"
           autoComplete="current-password"
           required
-          className="rounded border border-garis bg-permukaan px-3 py-2 outline-none focus:border-hijau focus:ring-2 focus:ring-hijau-muda"
+          className="rounded-lg border border-garis bg-kertas px-3 py-2 outline-none focus:border-hijau focus:bg-permukaan focus:ring-2 focus:ring-hijau-muda"
         />
       </label>
 
       {hasil.pesan && (
-        <p className="rounded border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
+        <p className="rounded-lg border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
           {hasil.pesan}
         </p>
       )}
@@ -47,7 +47,7 @@ export function FormMasuk({ lanjut }: { lanjut: string }) {
       <button
         type="submit"
         disabled={sedang}
-        className="rounded bg-hijau px-4 py-2.5 font-medium text-white transition hover:opacity-90 disabled:opacity-60"
+        className="mt-1 rounded-lg bg-hijau px-4 py-2.5 font-medium text-white shadow-lembut transition hover:opacity-90 disabled:opacity-60"
       >
         {sedang ? "Sedang masuk…" : "Masuk"}
       </button>

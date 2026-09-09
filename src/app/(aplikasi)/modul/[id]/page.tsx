@@ -38,7 +38,7 @@ export default async function HalamanModul({ params }: PageProps<"/modul/[id]">)
         {izin === "penuh" && (
           <Link
             href={`/modul/${modul.id}/ubah`}
-            className="rounded border border-garis px-3 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
+            className="rounded-lg border border-garis px-3 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
           >
             Sunting modul
           </Link>

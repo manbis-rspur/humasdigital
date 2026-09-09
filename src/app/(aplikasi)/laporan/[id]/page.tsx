@@ -51,7 +51,7 @@ export default async function HalamanLaporanBulan({
       />
 
       {konten.length > 0 && (
-        <section className="overflow-x-auto rounded border border-garis bg-permukaan">
+        <section className="overflow-x-auto rounded-xl shadow-lembut border border-garis bg-permukaan">
           <table className="w-full min-w-[52rem] border-collapse text-sm">
             <thead>
               <tr className="bg-permukaan-2 text-left text-[0.65rem] font-semibold uppercase tracking-[0.13em] text-tinta-3">
@@ -88,7 +88,7 @@ export default async function HalamanLaporanBulan({
                   </td>
                   <td className="border-b border-garis px-3 py-2 whitespace-nowrap">
                     {k.ada_ads ? (
-                      <span className="rounded bg-[#f0e7d4] px-2 py-0.5 text-xs font-semibold text-oker">
+                      <span className="rounded-lg bg-[#f0e7d4] px-2 py-0.5 text-xs font-semibold text-oker">
                         Rp {angkaRapi(k.biaya_ads)}
                       </span>
                     ) : (
@@ -124,7 +124,7 @@ export default async function HalamanLaporanBulan({
         <div className="flex flex-col gap-3">
           <a
             href={`/laporan/${l.id}/word`}
-            className="w-fit rounded bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90"
+            className="w-fit rounded-lg bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90"
           >
             Unduh Word
           </a>

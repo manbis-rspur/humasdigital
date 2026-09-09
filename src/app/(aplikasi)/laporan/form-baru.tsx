@@ -13,7 +13,7 @@ export function FormBaru() {
   const kini = new Date();
 
   return (
-    <form action={kirim} className="flex flex-col gap-3 rounded border border-garis bg-permukaan p-5">
+    <form action={kirim} className="flex flex-col gap-3 rounded-xl shadow-lembut border border-garis bg-permukaan p-5">
       <p className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
         Laporan bulan baru
       </p>
@@ -35,7 +35,7 @@ export function FormBaru() {
         <button
           type="submit"
           disabled={sedang}
-          className="rounded bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+          className="rounded-lg bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
         >
           {sedang ? "Membuat…" : "Buat laporan"}
         </button>

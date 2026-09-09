@@ -131,7 +131,7 @@ export function FormJalankan({
         ))}
 
         {hasil.pesan && (
-          <p className="rounded border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
+          <p className="rounded-lg border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
             {hasil.pesan}
           </p>
         )}
@@ -139,7 +139,7 @@ export function FormJalankan({
         <button
           type="submit"
           disabled={sedang}
-          className="w-fit rounded bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
+          className="w-fit rounded-lg bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
         >
           {sedang ? "Sedang menyusun…" : "Susun dokumen"}
         </button>

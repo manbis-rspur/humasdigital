@@ -43,7 +43,7 @@ export default async function HalamanRiwayat({
       </div>
 
       {terbuka && (
-        <div className="flex flex-col gap-3 rounded border border-garis bg-permukaan-2 p-5">
+        <div className="flex flex-col gap-3 rounded-xl shadow-lembut border border-garis bg-permukaan-2 p-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
               {terbuka.modul_judul} · {waktu.format(new Date(terbuka.pada))}
@@ -63,7 +63,7 @@ export default async function HalamanRiwayat({
       )}
 
       {riwayat.length === 0 ? (
-        <div className="rounded border border-garis bg-permukaan px-5 py-10 text-center">
+        <div className="rounded-lg border border-garis bg-permukaan px-5 py-10 text-center">
           <p className="font-medium">Belum ada dokumen tersimpan.</p>
           <p className="mt-1 text-sm text-tinta-3">
             Dokumen tersimpan sendiri setiap kali sebuah modul dijalankan.
@@ -76,7 +76,7 @@ export default async function HalamanRiwayat({
             return (
               <li
                 key={r.id}
-                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded border border-garis bg-permukaan px-4 py-3"
+                className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-garis bg-permukaan px-4 py-3"
               >
                 <div className="mr-auto min-w-0">
                   <Link

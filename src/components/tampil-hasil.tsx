@@ -105,7 +105,7 @@ export function TampilHasil({
               type="button"
               onClick={kirim}
               disabled={mengirim || terkirim}
-              className="rounded bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60"
+              className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60"
             >
               {terkirim
                 ? "Sudah dikirim"
@@ -117,7 +117,7 @@ export function TampilHasil({
           {riwayatId !== null && (
             <a
               href={`/riwayat/${riwayatId}/word`}
-              className="rounded bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+              className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
             >
               Unduh Word
             </a>
@@ -142,7 +142,7 @@ export function TampilHasil({
 
       {kabar && <p className="text-sm text-hijau">{kabar}</p>}
 
-      <div className="overflow-x-auto rounded border border-garis bg-permukaan p-5">
+      <div className="overflow-x-auto rounded-xl shadow-lembut border border-garis bg-permukaan p-5">
         {/* Keduanya tetap ada di halaman; yang tidak dipakai
             disembunyikan. Pratinjau harus tetap hidup supaya
             penyalinan berbentuk punya bahan untuk disalin. */}

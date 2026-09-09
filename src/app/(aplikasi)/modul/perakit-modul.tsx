@@ -112,7 +112,7 @@ export function PerakitModul({
 
         <div className="flex flex-col gap-3">
           {kolom.map((k, i) => (
-            <div key={i} className="rounded border border-garis bg-permukaan p-4">
+            <div key={i} className="rounded-xl shadow-lembut border border-garis bg-permukaan p-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_11rem_auto]">
                 <label className="flex flex-col gap-1">
                   <span className="text-xs text-tinta-3">Label</span>
@@ -204,7 +204,7 @@ export function PerakitModul({
         <button
           type="button"
           onClick={tambah}
-          className="w-fit rounded border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
+          className="w-fit rounded-lg border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
         >
           Tambah isian
         </button>
@@ -252,7 +252,7 @@ export function PerakitModul({
       </section>
 
       {hasil.pesan && (
-        <p className="rounded border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
+        <p className="rounded-lg border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
           {hasil.pesan}
         </p>
       )}
@@ -262,13 +262,13 @@ export function PerakitModul({
         <button
           type="submit"
           disabled={sedang}
-          className="rounded bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
+          className="rounded-lg bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
         >
           {sedang ? "Menyimpan…" : "Simpan modul"}
         </button>
         <Link
           href="/"
-          className="rounded border border-garis px-5 py-2.5 font-medium text-tinta-2 hover:bg-permukaan-2"
+          className="rounded-lg border border-garis px-5 py-2.5 font-medium text-tinta-2 hover:bg-permukaan-2"
         >
           Kembali
         </Link>

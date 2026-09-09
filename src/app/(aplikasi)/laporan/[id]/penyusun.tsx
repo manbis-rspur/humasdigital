@@ -20,7 +20,7 @@ export function FormAngka({
   const [hasil, kirim, sedang] = useActionState(simpanAngka, hasilAwal);
 
   return (
-    <form action={kirim} className="flex flex-col gap-4 rounded border border-garis bg-permukaan p-5">
+    <form action={kirim} className="flex flex-col gap-4 rounded-xl shadow-lembut border border-garis bg-permukaan p-5">
       <input type="hidden" name="id" value={id} />
       <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
         Capaian akun
@@ -65,7 +65,7 @@ export function FormAngka({
       <button
         type="submit"
         disabled={sedang}
-        className="w-fit rounded border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2 disabled:opacity-60"
+        className="w-fit rounded-lg border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2 disabled:opacity-60"
       >
         {sedang ? "Menyimpan…" : "Simpan capaian akun"}
       </button>
@@ -77,7 +77,7 @@ export function FormKonten({ laporanId }: { laporanId: number }) {
   const [hasil, kirim, sedang] = useActionState(tambahKonten, hasilAwal);
 
   return (
-    <form action={kirim} className="flex flex-col gap-3 rounded border border-garis bg-permukaan p-5">
+    <form action={kirim} className="flex flex-col gap-3 rounded-xl shadow-lembut border border-garis bg-permukaan p-5">
       <input type="hidden" name="laporan_id" value={laporanId} />
       <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
         Tambah konten
@@ -136,7 +136,7 @@ export function FormKonten({ laporanId }: { laporanId: number }) {
       <button
         type="submit"
         disabled={sedang}
-        className="w-fit rounded bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+        className="w-fit rounded-lg bg-hijau px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
       >
         {sedang ? "Menyimpan…" : "Tambah konten"}
       </button>
@@ -154,7 +154,7 @@ export function TombolSusun({ id, sudahAda }: { id: number; sudahAda: boolean })
         <button
           type="submit"
           disabled={sedang}
-          className="rounded bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
+          className="rounded-lg bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
         >
           {sedang ? "Menyusun…" : sudahAda ? "Susun ulang naskah" : "Susun naskah laporan"}
         </button>
@@ -171,7 +171,7 @@ export function TombolSusun({ id, sudahAda }: { id: number; sudahAda: boolean })
         </p>
       )}
       {hasil.pesan && (
-        <p className="rounded border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
+        <p className="rounded-lg border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
           {hasil.pesan}
         </p>
       )}

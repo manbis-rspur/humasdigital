@@ -32,7 +32,7 @@ export default async function HalamanLaporan() {
       <FormBaru />
 
       {laporan.length === 0 ? (
-        <div className="rounded border border-garis bg-permukaan px-5 py-10 text-center">
+        <div className="rounded-lg border border-garis bg-permukaan px-5 py-10 text-center">
           <p className="font-medium">Belum ada laporan.</p>
           <p className="mt-1 text-sm text-tinta-3">
             Mulai dengan memilih bulannya di atas.
@@ -43,7 +43,7 @@ export default async function HalamanLaporan() {
           {laporan.map((l) => (
             <li
               key={l.id}
-              className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded border border-garis bg-permukaan px-4 py-3"
+              className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-garis bg-permukaan px-4 py-3"
             >
               <div className="mr-auto">
                 <Link href={`/laporan/${l.id}`} className="font-medium hover:underline">
@@ -56,14 +56,14 @@ export default async function HalamanLaporan() {
               {l.hasil && (
                 <a
                   href={`/laporan/${l.id}/word`}
-                  className="rounded border border-garis px-3 py-1.5 text-xs font-medium text-tinta-2 hover:bg-permukaan-2"
+                  className="rounded-lg border border-garis px-3 py-1.5 text-xs font-medium text-tinta-2 hover:bg-permukaan-2"
                 >
                   Unduh Word
                 </a>
               )}
               <Link
                 href={`/laporan/${l.id}`}
-                className="rounded bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
               >
                 Buka
               </Link>
