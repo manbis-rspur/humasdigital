@@ -4,7 +4,7 @@ import Kedip from "@/components/kedip";
 import Lonceng from "@/components/lonceng";
 import Navigasi, { type ButirMenu } from "@/components/navigasi";
 import { keluar } from "@/lib/auth-actions";
-import { bolehSosmed, penggunaBerhak } from "@/lib/akses";
+import { bolehMcu, bolehSosmed, penggunaBerhak } from "@/lib/akses";
 import { bacaIdentitas } from "@/lib/identitas";
 import { bacaLonceng } from "@/lib/notifikasi";
 import { gayaWarna } from "@/lib/gaya-warna";
@@ -22,12 +22,17 @@ const MENU_SOSMED: ButirMenu = {
   ikon: "laporan",
 };
 
+/** Hanya untuk pemegang izin MCU — Marketing. */
+const MENU_MCU: ButirMenu = { href: "/mcu", label: "MCU", ikon: "mcu" };
+
 export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
   const pengguna = await penggunaBerhak();
   const identitas = await bacaIdentitas();
   const menu: ButirMenu[] = (await bolehSosmed())
     ? [MENU[0], MENU_SOSMED, MENU[1], MENU[2]]
     : [...MENU];
+
+  if (await bolehMcu()) menu.splice(1, 0, MENU_MCU);
 
   const lonceng = await bacaLonceng();
 

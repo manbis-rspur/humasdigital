@@ -37,11 +37,40 @@ export async function wajibHumasPenuh(): Promise<void> {
   if ((await izinHumas()) !== "penuh") redirect("/tanpa-akses");
 }
 
-/** Identitas orang yang sedang masuk, sekaligus memastikan berhak. */
+/**
+ * Izin memakai kalkulator MCU.
+ *
+ * Berdiri sendiri, tidak menumpang izin humas: yang memegangnya
+ * Marketing, yang tidak ada urusannya dengan modul penyusun dokumen.
+ * Dashboard ini menampungnya karena kalkulatornya alat kerja
+ * pemasaran, bukan karena orangnya bagian dari Humas.
+ */
+export async function bolehMcu(): Promise<boolean> {
+  return bolehAkses("mcu");
+}
+
+export async function wajibMcu(): Promise<PenggunaAktif> {
+  const pengguna = await getPenggunaAktif();
+  if (!pengguna) redirect("/login");
+  if (!(await bolehAkses("mcu"))) redirect("/tanpa-akses");
+  return pengguna;
+}
+
+/**
+ * Identitas orang yang sedang masuk, sekaligus memastikan berhak.
+ *
+ * Berhak berarti salah satu: boleh memakai modul penyusun dokumen,
+ * atau boleh memakai kalkulator MCU. Pemegang izin MCU saja tetap
+ * bisa masuk — yang dibatasi isi menunya, bukan pintunya.
+ */
 export async function penggunaBerhak(): Promise<PenggunaAktif> {
   const pengguna = await getPenggunaAktif();
   if (!pengguna) redirect("/login");
-  await wajibHumas();
+
+  if ((await izinHumas()) === "tidak" && !(await bolehAkses("mcu"))) {
+    redirect("/tanpa-akses");
+  }
+
   return pengguna;
 }
 

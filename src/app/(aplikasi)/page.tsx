@@ -1,12 +1,20 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import Ikon, { type NamaIkon } from "@/components/ikon";
 import { NAMA_BULAN } from "@/lib/sosmed";
-import { wajibHumas } from "@/lib/akses";
+import { bolehMcu, izinHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { bacaKolom } from "@/lib/modul-ai";
 
 export default async function HalamanHumas() {
-  const izin = await wajibHumas();
+  const izin = await izinHumas();
+
+  // Yang hanya memegang izin MCU tidak punya urusan dengan daftar
+  // modul penyusun dokumen — diantar langsung ke kalkulatornya.
+  if (izin === "tidak") {
+    if (await bolehMcu()) redirect("/mcu");
+    redirect("/tanpa-akses");
+  }
 
   const supabase = await createClient();
   const { data } = await supabase
