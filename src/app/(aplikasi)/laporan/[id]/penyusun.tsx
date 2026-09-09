@@ -1,7 +1,12 @@
 "use client";
 
 import { useActionState } from "react";
-import { simpanAngka, tambahKonten, susunLaporan } from "@/lib/sosmed-actions";
+import {
+  kirimLaporanKeArsip,
+  simpanAngka,
+  tambahKonten,
+  susunLaporan,
+} from "@/lib/sosmed-actions";
 import { PLATFORM, UKURAN, angkaRapi, interaksi, type Konten } from "@/lib/sosmed";
 import { hasilAwal } from "@/lib/hasil";
 
@@ -208,5 +213,63 @@ export function RingkasKonten({ daftar }: { daftar: Konten[] }) {
       {angkaRapi(daftar.reduce((j, k) => j + k.tayangan, 0))} tayangan ·{" "}
       {angkaRapi(daftar.reduce((j, k) => j + interaksi(k), 0))} interaksi
     </p>
+  );
+}
+
+
+/**
+ * Mengirim laporan yang sudah jadi ke Koordinator.
+ *
+ * Lewat jalur ini, bukan diunggah manual sebagai berkas: hanya
+ * begitu arsip tahu laporan ini berasal dari mana, dan putusan
+ * Koordinator bisa pulang ke sini — membuka laporannya untuk Humas
+ * sebagai bahan kalender konten.
+ */
+export function TombolKirim({
+  id,
+  sudahDikirim,
+  disetujui,
+}: {
+  id: number;
+  sudahDikirim: boolean;
+  disetujui: boolean;
+}) {
+  const [hasil, kirim, sedang] = useActionState(kirimLaporanKeArsip, hasilAwal);
+
+  return (
+    <form action={kirim} className="flex flex-col gap-2">
+      <input type="hidden" name="id" value={id} />
+
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          disabled={sedang || disetujui}
+          className="rounded-lg border border-garis px-4 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2 disabled:opacity-60"
+        >
+          {sedang
+            ? "Mengirim…"
+            : disetujui
+              ? "Sudah disetujui Koordinator"
+              : sudahDikirim
+                ? "Kirim ulang ke Koordinator"
+                : "Kirim ke Koordinator"}
+        </button>
+        <input
+          name="keterangan"
+          placeholder="Keterangan untuk Koordinator (boleh dikosongkan)"
+          className={`${gaya} min-w-64 flex-1`}
+        />
+      </div>
+
+      {hasil.pesan && <p className="text-sm text-merah">{hasil.pesan}</p>}
+      {hasil.berhasil && <p className="text-sm text-hijau">{hasil.berhasil}</p>}
+
+      {disetujui && (
+        <p className="text-xs text-tinta-3">
+          Laporan yang sudah disetujui tidak dikirim ulang. Kalau memang perlu
+          diperbaiki, minta Koordinator mengembalikannya lebih dulu.
+        </p>
+      )}
+    </form>
   );
 }

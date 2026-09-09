@@ -77,3 +77,40 @@ export function angkaRapi(n: number) {
 export function persenRapi(pecahan: number) {
   return `${(pecahan * 100).toFixed(2)}%`;
 }
+
+
+/**
+ * Memeras bagian laporan yang berguna sebagai pijakan kalender
+ * konten bulan berikutnya.
+ *
+ * Yang diambil bagian yang menilai dan merencanakan — kesimpulan,
+ * analisis kualitatif, dan rencana kerja — bukan seluruh naskah.
+ * Menyodorkan laporan utuh ke kotak isian membuatnya terlalu panjang
+ * untuk dibaca ulang orangnya, padahal justru itu gunanya: dilihat
+ * dulu, diperbaiki bila perlu, baru dipakai.
+ */
+export function perasEvaluasi(naskah: string): string {
+  const baris = naskah.split("\n");
+  const bagian: string[][] = [];
+  let sekarang: string[] | null = null;
+
+  for (const b of baris) {
+    if (/^#{1,4}\s/.test(b)) {
+      sekarang = [b];
+      bagian.push(sekarang);
+    } else if (sekarang) {
+      sekarang.push(b);
+    }
+  }
+
+  const penting = bagian.filter((b) =>
+    /kesimpulan|kualitatif|rencana kerja|evaluasi|rekomendasi/i.test(b[0]),
+  );
+
+  const hasil =
+    penting.length > 0
+      ? penting.map((b) => b.join("\n").trim()).join("\n\n")
+      : naskah.slice(-3000);
+
+  return hasil.trim().slice(0, 6000);
+}

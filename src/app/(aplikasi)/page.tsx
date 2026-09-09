@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Ikon, { type NamaIkon } from "@/components/ikon";
+import { NAMA_BULAN } from "@/lib/sosmed";
 import { wajibHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { bacaKolom } from "@/lib/modul-ai";
@@ -27,6 +28,19 @@ export default async function HalamanHumas() {
     .eq("status_tinjauan", "Perlu revisi")
     .order("ditinjau_pada", { ascending: false })
     .limit(5);
+
+  // Laporan media sosial yang sudah disetujui Koordinator. Terbuka
+  // untuk Humas sejak disetujui — sebelum itu database sendiri yang
+  // menutupnya, jadi kuerinya cukup ditulis apa adanya.
+  const { data: laporanSiap } = await supabase
+    .from("laporan_sosmed")
+    .select("id, bulan, tahun, disetujui_pada")
+    .not("disetujui_pada", "is", null)
+    .order("tahun", { ascending: false })
+    .order("bulan", { ascending: false })
+    .limit(3);
+
+  const kalender = modul.find((m) => /kalender/i.test(m.judul));
 
   // Dikelompokkan per kategori, urut sesuai kemunculan pertamanya —
   // bukan diurutkan menurut abjad, supaya modul pokok tetap di atas.
@@ -81,6 +95,41 @@ export default async function HalamanHumas() {
           )}
         </div>
       </div>
+
+      {(laporanSiap ?? []).length > 0 && (
+        <section className="flex flex-col gap-3 rounded-xl border border-hijau bg-hijau-muda/40 p-5">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-hijau">
+            <Ikon nama="centang" ukuran={14} />
+            Laporan yang sudah disetujui
+          </h2>
+          <p className="text-sm text-tinta-2">
+            Evaluasi di dalamnya adalah bahan paling jujur untuk menyusun
+            kalender konten bulan berikutnya — apa yang terbukti jalan, apa
+            yang tidak.
+          </p>
+          <ul className="flex flex-col gap-2">
+            {(laporanSiap ?? []).map((l) => (
+              <li
+                key={l.id}
+                className="flex flex-wrap items-center gap-3 rounded-lg border border-garis bg-permukaan px-4 py-2.5"
+              >
+                <span className="mr-auto text-sm font-medium">
+                  Laporan Media Sosial {NAMA_BULAN[l.bulan]} {l.tahun}
+                </span>
+                {kalender && (
+                  <Link
+                    href={`/modul/${kalender.id}?laporan=${l.id}`}
+                    className="flex items-center gap-1.5 rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
+                  >
+                    <Ikon nama="waktu" ukuran={14} />
+                    Susun kalender dari evaluasinya
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {(dikembalikan ?? []).length > 0 && (
         <section className="flex flex-col gap-3 rounded-xl border border-oker bg-[#fbf6ec] p-5">

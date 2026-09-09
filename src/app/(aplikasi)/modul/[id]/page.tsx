@@ -2,13 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { izinHumas, wajibHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
-import { bacaKolom } from "@/lib/modul-ai";
+import { bacaKolom, type Kolom } from "@/lib/modul-ai";
+import { NAMA_BULAN, perasEvaluasi } from "@/lib/sosmed";
 import { FormJalankan } from "./form-jalankan";
 
-export default async function HalamanModul({ params }: PageProps<"/modul/[id]">) {
+export default async function HalamanModul({
+  params,
+  searchParams,
+}: PageProps<"/modul/[id]">) {
   await wajibHumas();
   const izin = await izinHumas();
   const { id } = await params;
+  const q = await searchParams;
 
   const supabase = await createClient();
   const { data: modul } = await supabase
@@ -18,6 +23,39 @@ export default async function HalamanModul({ params }: PageProps<"/modul/[id]">)
     .maybeSingle();
 
   if (!modul) notFound();
+
+  let kolom: Kolom[] = bacaKolom(modul.kolom);
+  let pijakan: string | null = null;
+
+  /**
+   * Kalender konten yang dibuka dari sebuah laporan berangkat dengan
+   * evaluasinya sudah terisi.
+   *
+   * Isinya tetap ditaruh di kotak yang bisa dibaca dan diubah, bukan
+   * diselundupkan diam-diam ke perintah AI. Yang menyusun kalender
+   * harus melihat sendiri pijakan yang dipakainya — dan bebas
+   * membetulkannya kalau menurutnya tidak tepat.
+   *
+   * Laporan yang belum disetujui tidak akan terbaca di sini sama
+   * sekali: yang menutupnya aturan database, bukan pemeriksaan di
+   * halaman ini.
+   */
+  const laporanId = Number(q.laporan);
+  if (Number.isInteger(laporanId) && laporanId > 0) {
+    const { data: laporan } = await supabase
+      .from("laporan_sosmed")
+      .select("bulan, tahun, hasil, disetujui_pada")
+      .eq("id", laporanId)
+      .maybeSingle();
+
+    if (laporan?.hasil && laporan.disetujui_pada) {
+      pijakan = `Laporan Media Sosial ${NAMA_BULAN[laporan.bulan]} ${laporan.tahun}`;
+      const isi = perasEvaluasi(laporan.hasil);
+      kolom = kolom.map((k) =>
+        k.kunci === "evaluasi" ? { ...k, bawaan: isi } : k,
+      );
+    }
+  }
 
   const namaBerkas = modul.judul
     .toLowerCase()
@@ -45,9 +83,17 @@ export default async function HalamanModul({ params }: PageProps<"/modul/[id]">)
         )}
       </div>
 
+      {pijakan && (
+        <p className="mb-6 flex flex-wrap items-center gap-2 rounded-lg border border-hijau bg-hijau-muda/50 px-4 py-2.5 text-sm text-tinta-2">
+          <span className="font-medium text-hijau">Berpijak pada {pijakan}.</span>
+          Evaluasinya sudah dimuat ke isian di bawah — periksa dulu, boleh
+          diubah sebelum kalendernya disusun.
+        </p>
+      )}
+
       <FormJalankan
         modulId={modul.id}
-        kolom={bacaKolom(modul.kolom)}
+        kolom={kolom}
         namaBerkas={namaBerkas}
         namaModul={modul.judul}
       />

@@ -552,3 +552,35 @@ ${BENTUK_JAWABAN}`,
 
   return { pesan: null, berhasil: catatan.join(". ") + "." };
 }
+
+
+/**
+ * Mengirim naskah laporan ke Arsip Publikasi di Dashboard
+ * Manajemen Bisnis, berikut sambungan ke laporan asalnya.
+ *
+ * Sambungan itu yang membuat persetujuan Koordinator bisa pulang ke
+ * sini. Kalau laporannya diunggah manual sebagai berkas, arsip tidak
+ * tahu berkas itu berasal dari laporan yang mana, dan putusannya
+ * berhenti di sana.
+ */
+export async function kirimLaporanKeArsip(_s: Hasil, formData: FormData): Promise<Hasil> {
+  const { pengguna, galat } = await pastikanBerhak();
+  if (!pengguna) return { pesan: galat, berhasil: null };
+
+  const id = angka(formData, "id");
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("kirim_laporan_ke_arsip", {
+    p_laporan_id: id,
+    p_keterangan: String(formData.get("keterangan") ?? "").trim() || null,
+  });
+
+  if (error) return { pesan: `Gagal dikirim: ${error.message}`, berhasil: null };
+
+  revalidatePath(`/laporan/${id}`);
+  return {
+    pesan: null,
+    berhasil:
+      "Terkirim ke Koordinator. Begitu disetujui, laporannya terbuka untuk Humas sebagai bahan kalender konten.",
+  };
+}

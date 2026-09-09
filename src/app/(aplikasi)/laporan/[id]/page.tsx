@@ -7,7 +7,13 @@ import { TampilHasil } from "@/components/tampil-hasil";
 import Ikon from "@/components/ikon";
 import { NAMA_BULAN, angkaRapi, interaksi, type Konten } from "@/lib/sosmed";
 import { Pembaca } from "./pembaca";
-import { FormAngka, FormKonten, RingkasKonten, TombolSusun } from "./penyusun";
+import {
+  FormAngka,
+  FormKonten,
+  RingkasKonten,
+  TombolKirim,
+  TombolSusun,
+} from "./penyusun";
 
 /**
  * Penanda tenggat.
@@ -63,6 +69,14 @@ export default async function HalamanLaporanBulan({
     .order("id");
 
   const konten = (baris ?? []) as Konten[];
+
+  // Sudah pernah dikirim ke arsip? Barisnya yang menjawab, bukan
+  // penanda tersendiri — satu keadaan, satu tempat menyimpannya.
+  const { data: diArsip } = await supabase
+    .from("publikasi")
+    .select("id, status_tinjauan, catatan_tinjauan, ditinjau_pada")
+    .eq("laporan_id", l.id)
+    .maybeSingle();
 
   return (
     <div className="flex flex-col gap-7">
@@ -165,6 +179,31 @@ export default async function HalamanLaporanBulan({
           >
             Unduh Word
           </a>
+          <TombolKirim
+            id={l.id}
+            sudahDikirim={Boolean(diArsip)}
+            disetujui={Boolean(l.disetujui_pada)}
+          />
+
+          {diArsip && diArsip.status_tinjauan !== "Menunggu" && (
+            <div
+              className={`rounded-xl border p-4 ${
+                diArsip.status_tinjauan === "Disetujui"
+                  ? "border-hijau bg-hijau-muda/50"
+                  : "border-oker bg-[#fbf6ec]"
+              }`}
+            >
+              <p className="text-sm font-medium">
+                Koordinator: {diArsip.status_tinjauan}
+              </p>
+              {diArsip.catatan_tinjauan && (
+                <p className="mt-1 text-sm text-tinta-2">
+                  {diArsip.catatan_tinjauan}
+                </p>
+              )}
+            </div>
+          )}
+
           <TampilHasil
             judul={`Laporan Media Sosial — ${NAMA_BULAN[l.bulan]} ${l.tahun}`}
             hasil={l.hasil}
