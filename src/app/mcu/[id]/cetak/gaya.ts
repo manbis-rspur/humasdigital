@@ -10,6 +10,12 @@
 export const gayaCetak = `
   @page { size: A4 portrait; margin: 12mm; }
 
+  /* Peramban membuang warna latar saat mencetak kecuali diminta
+     tegas — pilihan "Background graphics" di kotak cetak Chrome
+     bawaannya mati, dan tanpa baris ini kepala tabel serta baris
+     jumlah keluar putih polos. */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
   body { background: #e5e5e5; margin: 0; }
 
   .lembar {
