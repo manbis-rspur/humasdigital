@@ -30,7 +30,9 @@ export type NamaIkon =
   | "peringatan"
   | "modul"
   | "laporan"
-  | "waktu";
+  | "waktu"
+  | "tugas"
+  | "panah";
 
 const GAMBAR: Record<NamaIkon, string[]> = {
   beranda: ["M3 10.6 12 3.2l9 7.4", "M5.6 9.4V20.3h12.8V9.4", "M9.8 20.3v-5.6h4.4v5.6"],
@@ -82,6 +84,13 @@ const GAMBAR: Record<NamaIkon, string[]> = {
     "M14.6 17v-2",
   ],
   waktu: ["M12 4.4a7.6 7.6 0 1 0 0 15.2 7.6 7.6 0 0 0 0-15.2z", "M12 7.8V12l3 1.8"],
+  panah: ["M9.6 6.4l5.6 5.6-5.6 5.6"],
+  tugas: [
+    "M4.4 8.2l1.9 1.9 3.3-3.4",
+    "M4.4 16.2l1.9 1.9 3.3-3.4",
+    "M12.8 8h6.8",
+    "M12.8 16h6.8",
+  ],
 };
 
 export default function Ikon({
