@@ -37,6 +37,12 @@ export default function Navigasi({ menu }: { menu: ButirMenu[] }) {
           <Link
             key={m.href}
             href={m.href}
+            /* Tanpa ini, Next.js memuat lebih dulu SELURUH halaman di
+               menu begitu kepala halaman terlihat. Sepuluh menu berarti
+               sepuluh halaman digambar penuh di peladen untuk satu
+               kunjungan — beban yang tidak terpakai, dan yang lebih
+               buruk: sepuluh pemeriksaan sesi berbarengan. */
+            prefetch={false}
             aria-current={aktif ? "page" : undefined}
             className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium ${
               aktif
