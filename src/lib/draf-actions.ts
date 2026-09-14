@@ -141,6 +141,7 @@ export async function drafDariNaskah(
   judul: string,
   jenis: string,
   isi: string,
+  riwayatId: number | null = null,
 ): Promise<Balasan & { id: number | null }> {
   const { pengguna, galat } = await pastikanBerhak();
   if (!pengguna) return { ok: false, pesan: galat ?? "Tidak berhak.", id: null };
@@ -151,12 +152,22 @@ export async function drafDariNaskah(
   }
 
   const supabase = await createClient();
+
+  // Penanda instansi dibawa serta dari dokumen asalnya. Tanpa ini,
+  // draf milik instansi lain kembali dianggap milik RSPUR begitu
+  // ada yang meminta perbaikan di halaman draf.
+  const { data: asal } = riwayatId
+    ? await supabase.from("riwayat_ai").select("*").eq("id", riwayatId).maybeSingle()
+    : { data: null };
+
   const { data, error } = await supabase
     .from("draf")
     .insert({
       judul: bersih.slice(0, 120),
       jenis: jenis || "Lainnya",
       isi,
+      untuk_rspur: asal?.untuk_rspur !== false,
+      instansi: asal?.instansi ?? null,
       keterangan: "Disusun dengan modul AI, lalu dikirim langsung ke sini.",
       dibuat_oleh: pengguna.id,
     })
@@ -211,7 +222,7 @@ export async function perbaikiNaskahDraf(
 
   const { data: draf } = await supabase
     .from("draf")
-    .select("judul, jenis")
+    .select("*")
     .eq("id", id)
     .maybeSingle();
 
@@ -231,7 +242,10 @@ export async function perbaikiNaskahDraf(
     namaDokumen: draf.judul,
     instruksi: modul?.instruksi_sistem ?? null,
     pakaiDokter: modul?.pakai_dokter === true,
+    pakaiLayanan: modul?.pakai_layanan === true,
     pakaiIsu: modul?.pakai_isu === true,
+    untukRspur: draf.untuk_rspur !== false,
+    instansi: draf.instansi ?? null,
     naskah,
     permintaan,
   });

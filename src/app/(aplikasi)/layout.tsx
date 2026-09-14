@@ -28,8 +28,12 @@ const MENU_MCU: ButirMenu = { href: "/mcu", label: "MCU", ikon: "mcu" };
 /** Hanya Humas dan Digital Marketing — bukan Koordinator, bukan Admin. */
 const MENU_DRAF: ButirMenu = { href: "/draf", label: "Draf Bersama", ikon: "obrolan" };
 
-/** Sumber nama dokter yang boleh disebut AI dalam konten. */
-const MENU_DOKTER: ButirMenu = { href: "/dokter", label: "Daftar Dokter", ikon: "pengguna" };
+/** Sumber nama dokter dan layanan yang boleh disebut AI dalam konten. */
+const MENU_DOKTER: ButirMenu = {
+  href: "/dokter",
+  label: "Dokter & Layanan",
+  ikon: "pengguna",
+};
 
 /** Hari kesehatan dan isu yang sedang ramai, bahan usulan tema. */
 const MENU_ISU: ButirMenu = { href: "/isu", label: "Bahan Tema", ikon: "waktu" };

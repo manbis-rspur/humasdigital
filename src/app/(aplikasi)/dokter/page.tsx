@@ -6,6 +6,7 @@ import { punyaIzin } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { ubahAktifDokter } from "@/lib/dokter-actions";
 import { kelompokPoli, ringkasJadwal, type Dokter, type Sesi } from "@/lib/dokter";
+import type { Layanan } from "@/lib/layanan";
 import { DokterBaru } from "./baru";
 import { AmbilDariSitus, ImporJadwal } from "./impor";
 
@@ -24,13 +25,20 @@ export default async function HalamanDokter() {
   if (!(await punyaIzin("humas"))) redirect("/tanpa-akses");
 
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("dokter")
-    .select("id, poliklinik, nama, aktif, catatan, urutan, dokter_jadwal(hari, jam)")
-    .order("urutan")
-    .order("nama");
+  const [{ data }, { data: dataLayanan }] = await Promise.all([
+    supabase
+      .from("dokter")
+      .select("id, poliklinik, nama, aktif, catatan, urutan, dokter_jadwal(hari, jam)")
+      .order("urutan")
+      .order("nama"),
+    supabase
+      .from("layanan")
+      .select("id, nama, ringkasan, tautan, aktif, urutan")
+      .order("urutan"),
+  ]);
 
   const semua = (data ?? []) as unknown as (Dokter & { dokter_jadwal: Sesi[] | null })[];
+  const layanan = (dataLayanan ?? []) as unknown as Layanan[];
   const kelompok = kelompokPoli(semua);
   const aktif = semua.filter((d) => d.aktif).length;
   const daftarPoli = [...new Set(semua.map((d) => d.poliklinik))].sort();
@@ -38,11 +46,11 @@ export default async function HalamanDokter() {
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Daftar Dokter</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Dokter &amp; Layanan</h1>
         <p className="mt-1 max-w-2xl text-tinta-2">
-          Sumber nama dokter untuk konten. Modul Kalender Konten membaca daftar
-          ini, jadi nama yang disebut AI selalu nama yang benar-benar ada di
-          sini — dan hanya yang sedang praktik.
+          Sumber nama dokter dan daftar layanan untuk konten. Modul Kalender
+          Konten membaca keduanya, jadi yang disebut AI selalu yang benar-benar
+          ada di sini — dan hanya yang sedang berjalan.
         </p>
       </div>
 
@@ -51,6 +59,39 @@ export default async function HalamanDokter() {
       <ImporJadwal />
 
       <DokterBaru daftarPoli={daftarPoli} />
+
+      {layanan.length > 0 && (
+        <section className="flex flex-col gap-3">
+          <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
+            <Ikon nama="modul" ukuran={14} />
+            Layanan
+            <span className="font-normal normal-case tracking-normal">
+              {layanan.length}
+            </span>
+          </h2>
+
+          <ul className="grid gap-1.5 sm:grid-cols-2">
+            {layanan.map((l) => (
+              <li
+                key={l.id}
+                className="rounded-xl border border-garis bg-permukaan px-4 py-2.5 shadow-lembut"
+              >
+                <span className="font-medium">{l.nama}</span>
+                {l.ringkasan && (
+                  <span className="mt-0.5 block text-xs text-tinta-2">
+                    {l.ringkasan}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-xs text-tinta-3">
+            Ikut tersegarkan sendiri dari rspur.co.id. Layanan yang sudah tidak
+            diumumkan di situs berhenti muncul di konten dengan sendirinya.
+          </p>
+        </section>
+      )}
 
       {semua.length === 0 ? (
         <div className="rounded-xl border border-garis bg-permukaan px-5 py-10 text-center shadow-lembut">

@@ -80,7 +80,7 @@ export async function perbaikiDokumen(
 
   const { data: riwayat } = await supabase
     .from("riwayat_ai")
-    .select("modul_id, modul_judul")
+    .select("*")
     .eq("id", riwayatId)
     .maybeSingle();
 
@@ -96,7 +96,12 @@ export async function perbaikiDokumen(
     namaDokumen: riwayat.modul_judul,
     instruksi: modul?.instruksi_sistem ?? null,
     pakaiDokter: modul?.pakai_dokter === true,
+    pakaiLayanan: modul?.pakai_layanan === true,
     pakaiIsu: modul?.pakai_isu === true,
+    // Belum ada penandanya berarti dokumen lama, dan seluruh
+    // dokumen lama memang untuk RSPUR.
+    untukRspur: riwayat.untuk_rspur !== false,
+    instansi: riwayat.instansi ?? null,
     naskah,
     permintaan,
   });

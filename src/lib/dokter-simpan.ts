@@ -72,3 +72,36 @@ export async function tanamDokter(
 
   return { jumlah: peta.size, pesan: null };
 }
+
+/**
+ * Menanam daftar layanan. Selalu mengganti seluruhnya.
+ *
+ * Layanan yang sudah tidak diumumkan di situs harus berhenti
+ * muncul di konten — mengajak orang datang untuk layanan yang
+ * sudah tidak ada lebih buruk daripada tidak mengumumkan apa pun.
+ */
+export async function tanamLayanan(
+  supabase: Klien,
+  daftar: { nama: string; ringkasan: string | null; tautan: string | null }[],
+): Promise<HasilTanam> {
+  if (daftar.length === 0) return { jumlah: 0, pesan: "Tidak ada layanan untuk disimpan." };
+
+  const { error: galatHapus } = await supabase.from("layanan").delete().gt("id", 0);
+  if (galatHapus) {
+    return { jumlah: 0, pesan: `Gagal mengosongkan daftar layanan: ${galatHapus.message}` };
+  }
+
+  const baris = daftar.map((l, urutan) => ({
+    nama: l.nama,
+    ringkasan: l.ringkasan,
+    tautan: l.tautan,
+    urutan,
+    aktif: true,
+    diubah_pada: new Date().toISOString(),
+  }));
+
+  const { data, error } = await supabase.from("layanan").insert(baris).select("id");
+  if (error) return { jumlah: 0, pesan: `Gagal menyimpan layanan: ${error.message}` };
+
+  return { jumlah: (data ?? []).length, pesan: null };
+}

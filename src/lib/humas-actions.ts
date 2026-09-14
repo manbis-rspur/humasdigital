@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
+import { daftarLayananUntukAI } from "@/lib/layanan-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
 import { bacaKolom, kunciLain, susunPerintah } from "@/lib/modul-ai";
@@ -156,7 +157,24 @@ export async function jalankanModul(
   // Modul yang perlu menyebut nama dokter dibekali daftarnya. Yang
   // tidak perlu sengaja tidak dibekali: menyisipkan seratus nama ke
   // perintah balasan komplain hanya membuat AI salah fokus.
-  const dokter = modul.pakai_dokter === true ? await daftarDokterUntukAI() : null;
+  /**
+   * Dokumen untuk instansi lain tidak boleh membawa data RSPUR.
+   *
+   * Nama dokter dan daftar layanan RSPUR di dalam konten milik
+   * rumah sakit lain bukan cuma salah — ia menyesatkan pembacanya,
+   * dan baru ketahuan sesudah terbit.
+   *
+   * Hari kesehatan dan isu yang sedang ramai tetap dibawa: itu
+   * bahan umum, bukan milik RSPUR.
+   */
+  const untukRspur = formData.get("untuk_rspur") !== null;
+  const instansi = String(formData.get("instansi") ?? "").trim();
+
+  const dokter =
+    untukRspur && modul.pakai_dokter === true ? await daftarDokterUntukAI() : null;
+
+  const layanan =
+    untukRspur && modul.pakai_layanan === true ? await daftarLayananUntukAI() : null;
 
   // Bahan usulan tema: hari kesehatan pada rentang yang diminta,
   // dan isu yang sedang ramai. Rentangnya dibaca dari isian, supaya
@@ -187,7 +205,34 @@ export async function jalankanModul(
         ];
 
   if (bahan) perintah.push({ text: bahan });
+  if (layanan) perintah.push({ text: layanan });
   if (dokter) perintah.push({ text: dokter });
+
+  if (!untukRspur) {
+    // Ditaruh paling belakang supaya terbaca sesudah instruksi
+    // sistem modul, yang menyebut RSPUR sebagai tempat bekerja.
+    perintah.push({
+      text:
+        `PENTING — dokumen ini BUKAN untuk RS Pertamedika Ummi Rosnati.\n\n` +
+        (instansi
+          ? `Dokumen ini untuk ${instansi}. Sebut instansi itu bila perlu menyebut nama.\n`
+          : `Pemintanya belum menyebutkan nama instansinya. Tulis "[Nama Instansi]" ` +
+            `di tempat nama seharusnya berada, jangan mengarang nama.\n`) +
+        `Abaikan seluruh penyebutan RSPUR, Pertamedika, dan Ummi Rosnati pada ` +
+        `instruksi sistem di atas.\n\n` +
+        `Yang dilarang keras:\n` +
+        `1. Menyebut nama dokter mana pun. Daftar dokter instansi ini tidak ada di ` +
+        `sistem, jadi nama apa pun yang Anda tulis adalah karangan. Kolom dokter atau ` +
+        `narasumber diisi tanda hubung, atau sebutan jabatan umum seperti ` +
+        `"dokter spesialis anak" tanpa nama.\n` +
+        `2. Menyebut layanan, fasilitas, alat, poliklinik, atau nomor telepon milik ` +
+        `RSPUR. Anda tidak tahu apa yang dipunyai instansi ini.\n` +
+        `3. Menyebut angka, capaian, atau data RSPUR.\n\n` +
+        `Susun kontennya secara umum dan bisa dipakai instansi mana pun — bagian ` +
+        `yang harus diisi sendiri ditandai dalam kurung siku, misalnya ` +
+        `"[nama dokter]" atau "[jam praktik]".`,
+    });
+  }
 
   let hasil: string;
   try {
@@ -217,6 +262,12 @@ export async function jalankanModul(
       judul: judul.slice(0, 200),
       hasil,
       masukan: isian,
+      // Penandanya ikut tersimpan, bukan cuma dipakai sekali.
+      // Kalau tidak, perbaikan yang diminta belakangan akan
+      // menyelipkan kembali nama dokter RSPUR ke dokumen milik
+      // instansi lain.
+      untuk_rspur: untukRspur,
+      instansi: instansi === "" ? null : instansi,
       oleh: pengguna.id,
     })
     .select("id")

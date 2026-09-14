@@ -100,6 +100,7 @@ const tombolHijau =
  */
 export function AmbilDariSitus() {
   const [daftar, setDaftar] = useState<DokterBaca[] | null>(null);
+  const [jumlahLayanan, setJumlahLayanan] = useState(0);
   const [pesan, setPesan] = useState<string | null>(null);
   const [membaca, mulai] = useTransition();
   const [hasil, simpan, menyimpan] = useActionState(simpanDokterDariWeb, hasilAwal);
@@ -108,8 +109,12 @@ export function AmbilDariSitus() {
     setPesan(null);
     mulai(async () => {
       const h = await bacaDokterDariWeb();
-      if (h.dokter === null) setPesan(h.pesan);
-      else setDaftar(h.dokter);
+      if (h.dokter === null) {
+        setPesan(h.pesan);
+      } else {
+        setDaftar(h.dokter);
+        setJumlahLayanan(h.layanan.length);
+      }
     });
   }
 
@@ -126,9 +131,9 @@ export function AmbilDariSitus() {
           </span>
         </h2>
         <p className="mt-1 max-w-2xl text-sm text-tinta-2">
-          Membaca halaman Jadwal Dokter di situs rumah sakit. Setiap ada
-          penambahan dokter atau perubahan jadwal di sana, daftar ini ikut —
-          tidak perlu berkas apa pun.
+          Membaca halaman Jadwal Dokter dan halaman Layanan di situs rumah
+          sakit. Setiap ada penambahan dokter, perubahan jadwal, atau layanan
+          baru di sana, daftar ini ikut — tidak perlu berkas apa pun.
         </p>
         <p className="mt-1 text-sm text-tinta-3">
           Berjalan sendiri tiap hari pukul 03.00 WIB. Tombol ini untuk kalau
@@ -154,7 +159,13 @@ export function AmbilDariSitus() {
           <BelumTersimpan jumlah={daftar.length} />
           <p className="text-sm text-tinta-2">
             Terbaca <strong>{daftar.length} dokter</strong> dalam{" "}
-            <strong>{poli} poliklinik</strong>.
+            <strong>{poli} poliklinik</strong>
+            {jumlahLayanan > 0 && (
+              <>
+                , dan <strong>{jumlahLayanan} layanan</strong>
+              </>
+            )}
+            .
           </p>
           <Pratinjau daftar={daftar} />
           <PilihanCara />

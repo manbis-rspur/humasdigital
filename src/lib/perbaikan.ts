@@ -2,6 +2,7 @@ import "server-only";
 import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
+import { daftarLayananUntukAI } from "@/lib/layanan-data";
 
 /**
  * Meminta AI memperbaiki dokumen yang sudah ada.
@@ -42,14 +43,21 @@ export async function mintaPerbaikan({
   namaDokumen,
   instruksi,
   pakaiDokter,
+  pakaiLayanan,
   pakaiIsu,
+  untukRspur,
+  instansi,
   naskah,
   permintaan,
 }: {
   namaDokumen: string;
   instruksi: string | null;
   pakaiDokter: boolean;
+  pakaiLayanan: boolean;
   pakaiIsu: boolean;
+  /** Dokumen milik instansi lain tidak boleh dibekali data RSPUR. */
+  untukRspur: boolean;
+  instansi: string | null;
   naskah: string;
   permintaan: string;
 }): Promise<HasilPerbaikan> {
@@ -85,9 +93,24 @@ export async function mintaPerbaikan({
     const bahan = await usulanUntukAI("", "");
     if (bahan) perintah.push({ text: bahan });
   }
-  if (pakaiDokter) {
+  if (untukRspur && pakaiLayanan) {
+    const layanan = await daftarLayananUntukAI();
+    if (layanan) perintah.push({ text: layanan });
+  }
+  if (untukRspur && pakaiDokter) {
     const dokter = await daftarDokterUntukAI();
     if (dokter) perintah.push({ text: dokter });
+  }
+
+  if (!untukRspur) {
+    perintah.push({
+      text:
+        `PENTING — dokumen ini BUKAN untuk RS Pertamedika Ummi Rosnati` +
+        (instansi ? `, melainkan untuk ${instansi}` : "") +
+        `. Abaikan penyebutan RSPUR pada instruksi sistem di atas. Jangan ` +
+        `memasukkan nama dokter, layanan, fasilitas, nomor telepon, atau angka ` +
+        `milik RSPUR — termasuk pada bagian yang Anda tambahkan sekarang.`,
+    });
   }
 
   try {

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ambilDariWeb } from "@/lib/dokter-web";
-import { kosongkanDokter, tanamDokter } from "@/lib/dokter-simpan";
+import { ambilLayananDariWeb } from "@/lib/layanan-web";
+import { kosongkanDokter, tanamDokter, tanamLayanan } from "@/lib/dokter-simpan";
 
 /**
  * Menyelaraskan daftar dokter dengan situs rspur.co.id, sekali
@@ -40,9 +41,18 @@ export async function GET(permintaan: Request) {
   const hasil = await tanamDokter(supabase, dibaca.dokter);
   if (hasil.pesan) return NextResponse.json({ ok: false, pesan: hasil.pesan }, { status: 500 });
 
+  // Daftar layanan menyusul, dan kegagalannya tidak membatalkan
+  // penyelarasan dokter yang sudah berhasil.
+  const layanan = await ambilLayananDariWeb();
+  const hasilLayanan = layanan.layanan
+    ? await tanamLayanan(supabase, layanan.layanan)
+    : { jumlah: 0, pesan: layanan.pesan };
+
   return NextResponse.json({
     ok: true,
-    jumlah: hasil.jumlah,
+    dokter: hasil.jumlah,
     poliklinik: new Set(dibaca.dokter.map((d) => d.poliklinik)).size,
+    layanan: hasilLayanan.jumlah,
+    catatanLayanan: hasilLayanan.pesan ?? undefined,
   });
 }

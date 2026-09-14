@@ -97,7 +97,7 @@ export function TampilHasil({
   async function keDrafBersama() {
     setSibuk("Mengirim ke draf…");
     await simpan();
-    const h = await drafDariNaskah(judul, jenisArsip ?? "Lainnya", naskah);
+    const h = await drafDariNaskah(judul, jenisArsip ?? "Lainnya", naskah, riwayatId);
     setSibuk(null);
     beriKabar(h.pesan);
     if (h.ok && h.id) setKeDraf(h.id);

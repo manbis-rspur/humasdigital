@@ -7,7 +7,9 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bacaBerkasDokter } from "@/lib/dokter-impor";
 import { ambilDariWeb } from "@/lib/dokter-web";
-import { kosongkanDokter, tanamDokter } from "@/lib/dokter-simpan";
+import { ambilLayananDariWeb } from "@/lib/layanan-web";
+import { kosongkanDokter, tanamDokter, tanamLayanan } from "@/lib/dokter-simpan";
+import type { LayananBaca } from "@/lib/layanan";
 import type { DokterBaca, LembarDokter, Sesi } from "@/lib/dokter";
 import type { Balasan, Hasil } from "@/lib/hasil";
 
@@ -151,12 +153,20 @@ export async function simpanJadwalDokter(_s: Hasil, formData: FormData): Promise
  * yang bisa menilai hasil bacanya masuk akal hanya orangnya.
  */
 export async function bacaDokterDariWeb(): Promise<
-  { dokter: DokterBaca[]; pesan: null } | { dokter: null; pesan: string }
+  | { dokter: DokterBaca[]; layanan: LayananBaca[]; pesan: null }
+  | { dokter: null; layanan: null; pesan: string }
 > {
   const galat = await pastikanBerhak();
-  if (galat) return { dokter: null, pesan: galat };
+  if (galat) return { dokter: null, layanan: null, pesan: galat };
 
-  return ambilDariWeb();
+  const [dokter, layanan] = await Promise.all([ambilDariWeb(), ambilLayananDariWeb()]);
+
+  if (dokter.dokter === null) return { dokter: null, layanan: null, pesan: dokter.pesan };
+
+  // Daftar layanan boleh gagal tanpa membatalkan seluruhnya —
+  // jadwal dokter bagian yang paling sering berubah, dan itulah
+  // yang paling penting tetap segar.
+  return { dokter: dokter.dokter, layanan: layanan.layanan ?? [], pesan: null };
 }
 
 /** Menyimpan daftar dokter yang barusan dibaca dari situs. */
@@ -164,7 +174,7 @@ export async function simpanDokterDariWeb(_s: Hasil, formData: FormData): Promis
   const galat = await pastikanBerhak();
   if (galat) return { pesan: galat, berhasil: null };
 
-  const dibaca = await ambilDariWeb();
+  const [dibaca, layanan] = await Promise.all([ambilDariWeb(), ambilLayananDariWeb()]);
   if (dibaca.dokter === null) return { pesan: dibaca.pesan, berhasil: null };
 
   const supabase = await createClient();
@@ -177,10 +187,16 @@ export async function simpanDokterDariWeb(_s: Hasil, formData: FormData): Promis
   const hasil = await tanamDokter(supabase, dibaca.dokter);
   if (hasil.pesan) return { pesan: hasil.pesan, berhasil: null };
 
+  let kabarLayanan = "";
+  if (layanan.layanan && layanan.layanan.length > 0) {
+    const h = await tanamLayanan(supabase, layanan.layanan);
+    kabarLayanan = h.pesan ? ` Layanannya gagal: ${h.pesan}` : ` ${h.jumlah} layanan ikut tersimpan.`;
+  }
+
   segarkan();
   return {
     pesan: null,
-    berhasil: `${hasil.jumlah} dokter tersimpan dari rspur.co.id.`,
+    berhasil: `${hasil.jumlah} dokter tersimpan dari rspur.co.id.${kabarLayanan}`,
   };
 }
 

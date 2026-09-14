@@ -156,6 +156,17 @@ export function FormJalankan({
   // Dimulai dari nilai bawaan kotaknya, bukan dari kosong: kalender
   // yang dibuka dari sebuah laporan datang dengan kotaknya sudah
   // terisi, dan mengosongkannya di sini menghapus isian itu.
+  /**
+   * Untuk siapa dokumen ini disusun.
+   *
+   * Modul yang sama dipakai juga menyusun konten untuk rumah sakit
+   * atau klinik lain. Untuk dokumen seperti itu, data RSPUR justru
+   * tidak boleh ikut — nama dokter RSPUR di dalam konten milik
+   * rumah sakit lain menyesatkan pembacanya, dan baru ketahuan
+   * sesudah terbit.
+   */
+  const [untukRspur, setUntukRspur] = useState(true);
+
   const [cerita, setCerita] = useState(() => {
     const k = kolom.find((x) => x.kunci === kunciCerita);
     return typeof k?.bawaan === "string" ? k.bawaan : "";
@@ -210,6 +221,51 @@ export function FormJalankan({
         className="flex flex-col gap-5"
       >
         <input type="hidden" name="modul_id" value={modulId} />
+        {untukRspur && <input type="hidden" name="untuk_rspur" value="ya" />}
+
+        <fieldset className="rounded-lg border border-garis px-3 py-2.5">
+          <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-tinta-3">
+            Dokumen ini untuk
+          </legend>
+
+          <div className="flex flex-wrap gap-x-5 gap-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                checked={untukRspur}
+                onChange={() => setUntukRspur(true)}
+                className="accent-hijau"
+              />
+              RS Pertamedika Ummi Rosnati
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="radio"
+                checked={!untukRspur}
+                onChange={() => setUntukRspur(false)}
+                className="accent-hijau"
+              />
+              Rumah sakit / klinik lain
+            </label>
+          </div>
+
+          {!untukRspur && (
+            <div className="mt-3 flex flex-col gap-2">
+              <input
+                name="instansi"
+                placeholder="Nama instansinya — boleh dikosongkan"
+                className={`${gaya} w-full text-sm`}
+              />
+              <p className="text-xs text-tinta-2">
+                Nama dokter dan daftar layanan RSPUR tidak akan ikut, dan RSPUR
+                tidak akan disebut. AI juga tidak akan menyebut nama dokter mana
+                pun — daftar dokter instansi itu tidak ada di sistem, jadi nama
+                apa pun akan jadi karangan. Bagian yang harus diisi sendiri
+                ditandai dalam kurung siku.
+              </p>
+            </div>
+          )}
+        </fieldset>
 
         {kolom.map((k) => {
           const cerita_ini = k.kunci === kunciCerita;

@@ -1,5 +1,6 @@
 import "server-only";
 import { HARI, type DokterBaca, type Sesi } from "@/lib/dokter";
+import { SITUS, ujungObjek, unduhMuatan } from "@/lib/situs-rspur";
 
 /**
  * Mengambil daftar dokter langsung dari situs rspur.co.id.
@@ -16,7 +17,7 @@ import { HARI, type DokterBaca, type Sesi } from "@/lib/dokter";
  * tampilan boleh berubah tanpa merusak pembacaan ini.
  */
 
-export const ALAMAT_JADWAL = "https://rspur.co.id/jadwal";
+export const ALAMAT_JADWAL = `${SITUS}/jadwal`;
 
 type DokterSitus = {
   id: number;
@@ -25,57 +26,6 @@ type DokterSitus = {
   isActive?: boolean;
   schedules?: { day: string; startTime: string; endTime: string }[];
 };
-
-/**
- * Merangkai kembali muatan yang ditanam Next.js di dalam halaman.
- *
- * Muatannya dipecah jadi banyak potongan, tiap potongan sebuah
- * tulisan JavaScript berisi teks yang sudah dilolosi. Disambung
- * dulu, baru bisa dibaca.
- */
-function rangkaiMuatan(html: string): string {
-  const potongan = html.matchAll(
-    /self\.__next_f\.push\(\[1,("(?:[^"\\]|\\.)*")\]\)/g,
-  );
-
-  let isi = "";
-  for (const p of potongan) {
-    try {
-      isi += JSON.parse(p[1]) as string;
-    } catch {
-      // Potongan yang tidak terbaca dilewati; satu potongan rusak
-      // tidak boleh membatalkan seluruh pengambilan.
-    }
-  }
-  return isi;
-}
-
-/** Akhir objek JSON yang dimulai di titik tertentu, atau -1. */
-function ujungObjek(teks: string, mulai: number): number {
-  let dalam = 0;
-  let diTulisan = false;
-  let lolos = false;
-
-  for (let i = mulai; i < teks.length; i++) {
-    const huruf = teks[i];
-
-    if (diTulisan) {
-      if (lolos) lolos = false;
-      else if (huruf === "\\") lolos = true;
-      else if (huruf === '"') diTulisan = false;
-      continue;
-    }
-
-    if (huruf === '"') diTulisan = true;
-    else if (huruf === "{") dalam++;
-    else if (huruf === "}") {
-      dalam--;
-      if (dalam === 0) return i + 1;
-    }
-  }
-
-  return -1;
-}
 
 function petikDokter(muatan: string): DokterSitus[] {
   const hasil = new Map<number, DokterSitus>();
@@ -141,27 +91,10 @@ export type HasilWeb =
   | { dokter: null; pesan: string };
 
 export async function ambilDariWeb(alamat = ALAMAT_JADWAL): Promise<HasilWeb> {
-  let html: string;
+  const unduh = await unduhMuatan(alamat);
+  if (unduh.muatan === null) return { dokter: null, pesan: unduh.pesan };
 
-  try {
-    const jawaban = await fetch(alamat, {
-      headers: { "User-Agent": "Dashboard Humas RSPUR (sinkron jadwal dokter)" },
-      // Selalu ambil yang terbaru. Salinan lama justru kebalikan
-      // dari gunanya menyambung ke situs.
-      cache: "no-store",
-    });
-
-    if (!jawaban.ok) {
-      return { dokter: null, pesan: `Situsnya menjawab ${jawaban.status}. Coba lagi nanti.` };
-    }
-
-    html = await jawaban.text();
-  } catch (galat) {
-    const pesan = galat instanceof Error ? galat.message : String(galat);
-    return { dokter: null, pesan: `Tidak bisa menghubungi rspur.co.id: ${pesan}` };
-  }
-
-  const daftar = petikDokter(rangkaiMuatan(html));
+  const daftar = petikDokter(unduh.muatan);
 
   if (daftar.length === 0) {
     return {
