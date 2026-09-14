@@ -84,9 +84,12 @@ function dariExcel(isi: ArrayBuffer): string {
     for (const baris of xml.split(/<row[ >]/).slice(1)) {
       const sel: string[] = [];
 
-      for (const m of baris.matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)) {
+      // Sel kosong ditulis menutup sendiri (<c r="A58"/>). Tanpa
+      // cabang kedua di bawah, pola serakah itu menelan sel
+      // sesudahnya, dan isi tabel bergeser satu kolom.
+      for (const m of baris.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)) {
         const sifat = m[1];
-        const dalam = m[2];
+        const dalam = m[2] ?? "";
         const nilai = /<v[^>]*>([\s\S]*?)<\/v>/.exec(dalam)?.[1] ?? "";
 
         if (/t="s"/.test(sifat)) {

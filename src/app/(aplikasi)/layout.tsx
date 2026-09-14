@@ -28,6 +28,9 @@ const MENU_MCU: ButirMenu = { href: "/mcu", label: "MCU", ikon: "mcu" };
 /** Hanya Humas dan Digital Marketing — bukan Koordinator, bukan Admin. */
 const MENU_DRAF: ButirMenu = { href: "/draf", label: "Draf Bersama", ikon: "obrolan" };
 
+/** Sumber nama dokter yang boleh disebut AI dalam konten. */
+const MENU_DOKTER: ButirMenu = { href: "/dokter", label: "Daftar Dokter", ikon: "pengguna" };
+
 export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
   const pengguna = await penggunaBerhak();
   const identitas = await bacaIdentitas();
@@ -36,7 +39,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
     : [...MENU];
 
   if (await bolehMcu()) menu.splice(1, 0, MENU_MCU);
-  if (await punyaIzin("humas")) menu.splice(1, 0, MENU_DRAF);
+  if (await punyaIzin("humas")) menu.splice(1, 0, MENU_DRAF, MENU_DOKTER);
 
   const lonceng = await bacaLonceng();
 

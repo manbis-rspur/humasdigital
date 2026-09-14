@@ -5,6 +5,7 @@ import { getPenggunaAktif } from "@/lib/auth";
 import { izinHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { susunDenganAI, type Bagian } from "@/lib/ai";
+import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
 import { bacaKolom, kunciLain, susunPerintah } from "@/lib/modul-ai";
@@ -104,7 +105,11 @@ export async function jalankanModul(
 
   const { data: modul } = await supabase
     .from("modul_ai")
-    .select("id, judul, instruksi_sistem, pola_perintah, kolom")
+    // Seluruh kolom, bukan daftar tetap: kolom pakai_dokter baru ada
+    // setelah berkas SQL 39 dijalankan, dan menyebut kolom yang belum
+    // ada membuat seluruh modul berhenti jalan, bukan cuma bagian
+    // dokternya.
+    .select("*")
     .eq("id", modulId)
     .maybeSingle();
 
@@ -147,6 +152,11 @@ export async function jalankanModul(
 
   const rujukan = await bacaRujukan(jalurRujukan);
 
+  // Modul yang perlu menyebut nama dokter dibekali daftarnya. Yang
+  // tidak perlu sengaja tidak dibekali: menyisipkan seratus nama ke
+  // perintah balasan komplain hanya membuat AI salah fokus.
+  const dokter = modul.pakai_dokter === true ? await daftarDokterUntukAI() : null;
+
   const perintah: Bagian[] =
     rujukan.length === 0
       ? [{ text: susunPerintah(modul.pola_perintah, isian) }]
@@ -166,6 +176,8 @@ export async function jalankanModul(
           },
           ...rujukan,
         ];
+
+  if (dokter) perintah.push({ text: dokter });
 
   let hasil: string;
   try {
