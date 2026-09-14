@@ -155,9 +155,14 @@ export async function jalankanModul(
             text:
               `${susunPerintah(modul.pola_perintah, isian)}\n\n` +
               `Berkas rujukan berikut dilampirkan oleh yang meminta. Pakai isinya ` +
-              `sebagai bahan — nama, angka, gaya, atau suasana yang terlihat di ` +
-              `sana. Jangan mengarang apa yang tidak ada di dalamnya, dan sebutkan ` +
-              `bila ada yang tidak terbaca.`,
+              `sebagai bahan — nama, angka, gaya, atau suasana yang terlihat di sana.\n\n` +
+              `Bila rujukannya berupa laporan atau evaluasi, perlakukan bagian ` +
+              `kesimpulan dan rekomendasinya sebagai pijakan utama: pertahankan yang ` +
+              `terbukti berhasil, perbaiki yang lemah, dan sebutkan terang kaitan tiap ` +
+              `usulan dengan temuan di laporan itu. Angka di dalamnya boleh dikutip ` +
+              `apa adanya, tapi jangan dihitung ulang.\n\n` +
+              `Jangan mengarang apa yang tidak ada di dalamnya, dan sebutkan bila ada ` +
+              `yang tidak terbaca.`,
           },
           ...rujukan,
         ];
