@@ -172,8 +172,15 @@ export async function jalankanModul(
 
   // Judul riwayat diambil dari isian wajib pertama — itu biasanya
   // yang paling menjelaskan isi dokumennya.
+  //
+  // Dipotong pada baris pertama dan dibatasi pendek. Sebagian isian
+  // kini berupa cerita beberapa kalimat, dan cerita utuh yang
+  // dijadikan judul membuat daftar riwayat tidak bisa dipindai mata.
   const kunciJudul = kolom.find((k) => k.wajib)?.kunci ?? kolom[0]?.kunci;
-  const judul = (kunciJudul && isian[kunciJudul]) || modul.judul;
+  const mentah = ((kunciJudul && isian[kunciJudul]) || modul.judul).trim();
+  const barisPertama = mentah.split("\n")[0].trim() || modul.judul;
+  const judul =
+    barisPertama.length > 90 ? `${barisPertama.slice(0, 89)}…` : barisPertama;
 
   const { data: tersimpan } = await supabase
     .from("riwayat_ai")
