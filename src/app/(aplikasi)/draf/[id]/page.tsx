@@ -15,6 +15,19 @@ import {
 import { NaskahDraf } from "./naskah";
 import { Percakapan, type Komentar } from "./percakapan";
 
+/**
+ * Batas waktu fungsi, dalam detik.
+ *
+ * Menyusun dan memperbaiki dokumen lewat AI bisa memakan setengah
+ * menit lebih, apalagi kalender sembilan kolom. Bila fungsinya
+ * dipotong di tengah jalan, jawabannya hilang — dan yang lebih
+ * buruk, cookie sesi yang baru disegarkan proxy ikut hilang karena
+ * tanggapannya tidak pernah sampai ke peramban. Itulah yang membuat
+ * orang terpental ke halaman masuk.
+ */
+export const maxDuration = 60;
+
+
 const waktu = new Intl.DateTimeFormat("id-ID", {
   timeZone: "Asia/Jakarta",
   day: "numeric",
@@ -102,7 +115,7 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
 
   return (
     <div className="flex flex-col gap-6">
-      <Link
+      <Link prefetch={false}
         href="/draf"
         className="flex w-fit items-center gap-1.5 text-sm text-tinta-3 hover:text-tinta"
       >

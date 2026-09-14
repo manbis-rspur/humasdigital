@@ -61,7 +61,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
         <div className="h-[3px] bg-hijau" />
 
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-5 gap-y-3 px-5 py-2.5">
-          <Link href="/" className="mr-auto flex items-center gap-3">
+          <Link prefetch={false} href="/" className="mr-auto flex items-center gap-3">
             {identitas.logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img

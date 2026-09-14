@@ -46,7 +46,7 @@ export default async function HalamanLaporan() {
               className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-garis bg-permukaan px-4 py-3"
             >
               <div className="mr-auto">
-                <Link href={`/laporan/${l.id}`} className="font-medium hover:underline">
+                <Link prefetch={false} href={`/laporan/${l.id}`} className="font-medium hover:underline">
                   {NAMA_BULAN[l.bulan]} {l.tahun}
                 </Link>
                 <p className="text-xs text-tinta-3">
@@ -62,7 +62,7 @@ export default async function HalamanLaporan() {
                   Unduh Word
                 </a>
               )}
-              <Link
+              <Link prefetch={false}
                 href={`/laporan/${l.id}`}
                 className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
               >

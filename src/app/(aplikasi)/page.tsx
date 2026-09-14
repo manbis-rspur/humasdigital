@@ -85,7 +85,7 @@ export default async function HalamanHumas() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
+          <Link prefetch={false}
             href="/riwayat"
             className="flex items-center gap-2 rounded-lg border border-garis px-4 py-2.5 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
           >
@@ -93,7 +93,7 @@ export default async function HalamanHumas() {
             Riwayat dokumen
           </Link>
           {izin === "penuh" && (
-            <Link
+            <Link prefetch={false}
               href="/modul/baru"
               className="flex items-center gap-2 rounded-lg bg-hijau px-4 py-2.5 text-sm font-medium text-white shadow-lembut hover:opacity-90"
             >
@@ -125,7 +125,7 @@ export default async function HalamanHumas() {
                   Laporan Media Sosial {NAMA_BULAN[l.bulan]} {l.tahun}
                 </span>
                 {kalender && (
-                  <Link
+                  <Link prefetch={false}
                     href={`/modul/${kalender.id}?laporan=${l.id}`}
                     className="flex items-center gap-1.5 rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
                   >
@@ -193,7 +193,7 @@ export default async function HalamanHumas() {
               {modul
                 .filter((m) => m.kategori === k)
                 .map((m) => (
-                  <Link
+                  <Link prefetch={false}
                     key={m.id}
                     href={`/modul/${m.id}`}
                     className="flex flex-col gap-2 rounded-xl border border-garis bg-permukaan p-5 shadow-lembut transition hover:border-hijau hover:shadow-angkat"

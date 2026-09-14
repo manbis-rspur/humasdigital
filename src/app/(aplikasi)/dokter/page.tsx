@@ -156,7 +156,7 @@ export default async function HalamanDokter() {
                           </button>
                         </form>
 
-                        <Link
+                        <Link prefetch={false}
                           href={`/dokter/${d.id}`}
                           className="flex items-center gap-1 text-xs font-medium text-hijau hover:underline"
                         >

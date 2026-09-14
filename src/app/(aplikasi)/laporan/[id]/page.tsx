@@ -16,6 +16,19 @@ import {
 } from "./penyusun";
 
 /**
+ * Batas waktu fungsi, dalam detik.
+ *
+ * Menyusun dan memperbaiki dokumen lewat AI bisa memakan setengah
+ * menit lebih, apalagi kalender sembilan kolom. Bila fungsinya
+ * dipotong di tengah jalan, jawabannya hilang — dan yang lebih
+ * buruk, cookie sesi yang baru disegarkan proxy ikut hilang karena
+ * tanggapannya tidak pernah sampai ke peramban. Itulah yang membuat
+ * orang terpental ke halaman masuk.
+ */
+export const maxDuration = 60;
+
+
+/**
  * Penanda tenggat.
  *
  * Berubah merah begitu lewat dan naskahnya belum tersusun — sebelum
@@ -81,7 +94,7 @@ export default async function HalamanLaporanBulan({
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <Link href="/laporan" className="text-sm text-tinta-3 hover:underline">
+        <Link prefetch={false} href="/laporan" className="text-sm text-tinta-3 hover:underline">
           ← Kembali ke daftar laporan
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">

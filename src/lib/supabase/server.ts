@@ -35,6 +35,27 @@ export const createClient = cache(async function createClient() {
     supabaseUrl,
     supabaseAnonKey,
     {
+      /**
+       * Koneksi ini TIDAK BOLEH menyegarkan sesi. Yang menyegarkan
+       * cuma proxy.
+       *
+       * Sebabnya: Server Component tidak boleh menulis cookie —
+       * lihat setAll di bawah yang sengaja menelan galatnya. Kalau
+       * koneksi di sini menyegarkan token, token barunya tidak bisa
+       * disimpan ke mana pun, sementara token lama SUDAH terpakai
+       * dan hangus di Supabase. Permintaan berikutnya datang membawa
+       * token yang sudah hangus, dan seluruh sesi dibatalkan tanpa
+       * pesan apa pun.
+       *
+       * Proxy berjalan lebih dulu pada setiap permintaan dan memang
+       * bisa menulis cookie, jadi penyegaran tetap terjadi — hanya
+       * saja di satu tempat, bukan di tujuh tempat sekaligus.
+       */
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
       cookies: {
         getAll() {
           return cookieStore.getAll();

@@ -266,7 +266,7 @@ export function PerakitModul({
         >
           {sedang ? "Menyimpan…" : "Simpan modul"}
         </button>
-        <Link
+        <Link prefetch={false}
           href="/"
           className="rounded-lg border border-garis px-5 py-2.5 font-medium text-tinta-2 hover:bg-permukaan-2"
         >

@@ -4,6 +4,19 @@ import { createClient } from "@/lib/supabase/server";
 import { hapusRiwayat } from "@/lib/humas-actions";
 import { TampilHasil } from "@/components/tampil-hasil";
 
+/**
+ * Batas waktu fungsi, dalam detik.
+ *
+ * Menyusun dan memperbaiki dokumen lewat AI bisa memakan setengah
+ * menit lebih, apalagi kalender sembilan kolom. Bila fungsinya
+ * dipotong di tengah jalan, jawabannya hilang — dan yang lebih
+ * buruk, cookie sesi yang baru disegarkan proxy ikut hilang karena
+ * tanggapannya tidak pernah sampai ke peramban. Itulah yang membuat
+ * orang terpental ke halaman masuk.
+ */
+export const maxDuration = 60;
+
+
 const waktu = new Intl.DateTimeFormat("id-ID", {
   day: "numeric",
   month: "long",
@@ -37,7 +50,7 @@ export default async function HalamanRiwayat({
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <Link href="/" className="text-sm text-tinta-3 hover:underline">
+        <Link prefetch={false} href="/" className="text-sm text-tinta-3 hover:underline">
           ← Kembali ke daftar modul
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">Riwayat Dokumen</h1>
@@ -53,7 +66,7 @@ export default async function HalamanRiwayat({
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
               {terbuka.modul_judul} · {waktu.format(new Date(terbuka.pada))}
             </p>
-            <Link href="/riwayat" className="text-sm text-tinta-3 hover:underline">
+            <Link prefetch={false} href="/riwayat" className="text-sm text-tinta-3 hover:underline">
               Tutup
             </Link>
           </div>
@@ -86,7 +99,7 @@ export default async function HalamanRiwayat({
                 className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border border-garis bg-permukaan px-4 py-3"
               >
                 <div className="mr-auto min-w-0">
-                  <Link
+                  <Link prefetch={false}
                     href={`/riwayat?dokumen=${r.id}`}
                     className="font-medium hover:underline"
                   >

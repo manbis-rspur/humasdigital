@@ -42,13 +42,13 @@ export default async function HalamanMcu() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
+          <Link prefetch={false}
             href="/mcu/pemeriksaan"
             className="rounded-lg border border-garis px-4 py-2.5 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
           >
             Daftar pemeriksaan
           </Link>
-          <Link
+          <Link prefetch={false}
             href="/mcu/baru"
             className="flex items-center gap-2 rounded-lg bg-hijau px-4 py-2.5 text-sm font-medium text-white hover:opacity-90"
           >
@@ -56,7 +56,7 @@ export default async function HalamanMcu() {
             Penawaran baru
           </Link>
           {pengguna.peran === "Admin" && (
-            <Link
+            <Link prefetch={false}
               href="/mcu/hapus"
               title="Mengosongkan data penawaran"
               className="flex items-center gap-2 rounded-lg border border-garis px-3 py-2.5 text-sm font-medium text-tinta-3 hover:bg-permukaan-2"
@@ -101,7 +101,7 @@ export default async function HalamanMcu() {
                 return (
                   <tr key={p.id} className="hover:bg-permukaan-2">
                     <td className="border-b border-garis px-4 py-2.5">
-                      <Link href={`/mcu/${p.id}`} className="font-medium hover:underline">
+                      <Link prefetch={false} href={`/mcu/${p.id}`} className="font-medium hover:underline">
                         {p.rekanan}
                       </Link>
                       <span className="block text-xs text-tinta-3">

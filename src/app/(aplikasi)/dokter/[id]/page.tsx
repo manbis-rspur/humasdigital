@@ -37,7 +37,7 @@ export default async function HalamanUbahDokter({ params }: PageProps<"/dokter/[
 
   return (
     <div className="flex max-w-3xl flex-col gap-6">
-      <Link
+      <Link prefetch={false}
         href="/dokter"
         className="flex w-fit items-center gap-1.5 text-sm text-tinta-3 hover:text-tinta"
       >

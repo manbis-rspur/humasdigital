@@ -117,7 +117,7 @@ export default function Lonceng({
             <ul className="max-h-[24rem] overflow-y-auto">
               {daftar.map((k) => (
                 <li key={k.kunci}>
-                  <Link
+                  <Link prefetch={false}
                     href={k.tautan}
                     onClick={() => setBuka(false)}
                     className="flex gap-3 border-b border-garis px-4 py-3 last:border-b-0 hover:bg-permukaan-2"

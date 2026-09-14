@@ -339,7 +339,7 @@ export function Kalkulator({
             >
               {sedang ? "Menyimpan…" : "Simpan penawaran"}
             </button>
-            <Link
+            <Link prefetch={false}
               href="/mcu"
               className="rounded-lg border border-garis px-4 py-2.5 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
             >

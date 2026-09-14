@@ -74,7 +74,7 @@ export default async function HalamanDraf() {
                 className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-xl border border-garis bg-permukaan px-4 py-3 shadow-lembut"
               >
                 <span className="mr-auto min-w-0">
-                  <Link
+                  <Link prefetch={false}
                     href={`/draf/${d.id}`}
                     className="font-medium hover:underline"
                   >
@@ -99,7 +99,7 @@ export default async function HalamanDraf() {
                   {d.status}
                 </span>
 
-                <Link
+                <Link prefetch={false}
                   href={`/draf/${d.id}`}
                   className="flex items-center gap-1.5 rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90"
                 >
@@ -121,7 +121,7 @@ export default async function HalamanDraf() {
           <ul className="flex flex-col gap-1.5">
             {terkirim.map((d) => (
               <li key={d.id} className="border-l-2 border-hijau pl-3 text-sm">
-                <Link href={`/draf/${d.id}`} className="hover:underline">
+                <Link prefetch={false} href={`/draf/${d.id}`} className="hover:underline">
                   {d.judul}
                 </Link>
                 <span className="ml-2 text-xs text-tinta-3">{d.jenis}</span>

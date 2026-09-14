@@ -64,7 +64,7 @@ export default async function HalamanPenawaran({ params }: PageProps<"/mcu/[id]"
   return (
     <div className="flex flex-col gap-7">
       <div>
-        <Link href="/mcu" className="text-sm text-tinta-3 hover:underline">
+        <Link prefetch={false} href="/mcu" className="text-sm text-tinta-3 hover:underline">
           ← Kembali ke daftar penawaran
         </Link>
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">{p.rekanan}</h1>

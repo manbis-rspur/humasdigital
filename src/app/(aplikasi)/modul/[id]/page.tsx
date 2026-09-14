@@ -8,6 +8,19 @@ import { bacaUsulan } from "@/lib/isu-data";
 import type { Usulan } from "@/lib/isu";
 import { FormJalankan } from "./form-jalankan";
 
+/**
+ * Batas waktu fungsi, dalam detik.
+ *
+ * Menyusun dan memperbaiki dokumen lewat AI bisa memakan setengah
+ * menit lebih, apalagi kalender sembilan kolom. Bila fungsinya
+ * dipotong di tengah jalan, jawabannya hilang — dan yang lebih
+ * buruk, cookie sesi yang baru disegarkan proxy ikut hilang karena
+ * tanggapannya tidak pernah sampai ke peramban. Itulah yang membuat
+ * orang terpental ke halaman masuk.
+ */
+export const maxDuration = 60;
+
+
 export default async function HalamanModul({
   params,
   searchParams,
@@ -90,7 +103,7 @@ export default async function HalamanModul({
 
   return (
     <div className="max-w-3xl">
-      <Link href="/" className="text-sm text-tinta-3 hover:underline">
+      <Link prefetch={false} href="/" className="text-sm text-tinta-3 hover:underline">
         ← Kembali ke daftar modul
       </Link>
 
@@ -100,7 +113,7 @@ export default async function HalamanModul({
           <p className="mt-1 max-w-xl text-tinta-2">{modul.deskripsi}</p>
         </div>
         {izin === "penuh" && (
-          <Link
+          <Link prefetch={false}
             href={`/modul/${modul.id}/ubah`}
             className="rounded-lg border border-garis px-3 py-2 text-sm font-medium text-tinta-2 hover:bg-permukaan-2"
           >

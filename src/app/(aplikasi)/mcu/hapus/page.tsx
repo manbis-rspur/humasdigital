@@ -35,7 +35,7 @@ export default async function HalamanHapusMcu() {
 
   return (
     <div className="max-w-2xl">
-      <Link href="/mcu" className="text-sm text-tinta-3 hover:underline">
+      <Link prefetch={false} href="/mcu" className="text-sm text-tinta-3 hover:underline">
         ← Kembali ke daftar penawaran
       </Link>
 
