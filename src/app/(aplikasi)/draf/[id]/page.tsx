@@ -12,6 +12,7 @@ import {
   TombolKirimArsip,
   TombolStatus,
 } from "./aksi-draf";
+import { NaskahDraf } from "./naskah";
 import { Percakapan, type Komentar } from "./percakapan";
 
 const waktu = new Intl.DateTimeFormat("id-ID", {
@@ -63,9 +64,9 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
   const [{ data: draf }, { data: revisi }, { data: komentar }] = await Promise.all([
     supabase
       .from("draf")
-      .select(
-        "id, judul, keterangan, jenis, status, berkas_nama, berkas_ukuran, tautan, publikasi_id, dikirim_pada, dibuat_pada, diubah_pada, pembuat:dibuat_oleh(nama)",
-      )
+      // Seluruh kolom: kolom isi baru ada setelah berkas SQL 41
+      // dijalankan.
+      .select("*, pembuat:dibuat_oleh(nama)")
       .eq("id", nomor)
       .maybeSingle(),
     supabase
@@ -131,6 +132,8 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
         <p className="max-w-2xl whitespace-pre-wrap text-tinta-2">{d.keterangan}</p>
       )}
 
+      {d.isi && <NaskahDraf id={d.id} isi={d.isi} terkunci={terkirim} />}
+
       {/* Berkas terbaru dan tautannya. */}
       <section className="flex flex-col gap-3 rounded-xl border border-garis bg-permukaan p-5 shadow-lembut">
         <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
@@ -140,7 +143,9 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
 
         {daftarRevisi.length === 0 && !d.tautan && (
           <p className="text-sm text-tinta-3">
-            Belum ada berkas yang diunggah pada draf ini.
+            {d.isi
+              ? "Draf ini berupa naskah teks. Boleh juga dilampiri berkas — desain, foto, atau naskah versi Word."
+              : "Belum ada berkas yang diunggah pada draf ini."}
           </p>
         )}
 

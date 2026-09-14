@@ -142,6 +142,7 @@ export function FormJalankan({
   namaModul,
   usulan,
   kunciCerita,
+  bolehKeDraf,
 }: {
   modulId: number;
   kolom: Kolom[];
@@ -149,6 +150,7 @@ export function FormJalankan({
   namaModul: string;
   usulan: Usulan[];
   kunciCerita: string | null;
+  bolehKeDraf: boolean;
 }) {
   const [hasil, setHasil] = useState<HasilSusun>(awal);
   // Dimulai dari nilai bawaan kotaknya, bukan dari kosong: kalender
@@ -282,6 +284,7 @@ export function FormJalankan({
           namaBerkas={namaBerkas}
           riwayatId={hasil.riwayatId}
           jenisArsip={namaModul}
+          bolehKeDraf={bolehKeDraf}
         />
       )}
     </div>

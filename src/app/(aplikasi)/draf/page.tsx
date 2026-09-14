@@ -30,9 +30,10 @@ export default async function HalamanDraf() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("draf")
-    .select(
-      "id, judul, keterangan, jenis, status, berkas_nama, berkas_ukuran, tautan, publikasi_id, dibuat_pada, diubah_pada, pembuat:dibuat_oleh(nama)",
-    )
+    // Seluruh kolom: kolom isi baru ada setelah berkas SQL 41
+    // dijalankan, dan menyebut kolom yang belum ada membuat
+    // daftarnya kosong sama sekali.
+    .select("*, pembuat:dibuat_oleh(nama)")
     .order("dibuat_pada", { ascending: false })
     .limit(100);
 
@@ -83,6 +84,7 @@ export default async function HalamanDraf() {
                     {d.jenis} · {waktu.format(new Date(d.dibuat_pada))}
                     {oleh && ` · ${oleh.nama.split(",")[0]}`}
                     {d.berkas_ukuran ? ` · ${ukuranRapi(d.berkas_ukuran)}` : ""}
+                    {d.isi && !d.berkas_nama ? " · naskah teks" : ""}
                   </span>
                   {d.keterangan && (
                     <span className="mt-0.5 block text-sm text-tinta-2">

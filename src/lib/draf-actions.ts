@@ -128,6 +128,68 @@ export async function tambahDraf(_s: Hasil, formData: FormData): Promise<Hasil> 
   return { pesan: null, berhasil: `"${judul}" masuk daftar draf.` };
 }
 
+/**
+ * Menaruh naskah hasil susunan AI langsung jadi draf.
+ *
+ * Tanpa diunduh lalu diunggah lagi. Dua langkah itu tidak
+ * menghasilkan apa pun, dan tiap langkah adalah kesempatan
+ * memakai berkas versi lama — yang justru persoalan yang ingin
+ * dipecahkan Draf Bersama.
+ */
+export async function drafDariNaskah(
+  judul: string,
+  jenis: string,
+  isi: string,
+): Promise<Balasan & { id: number | null }> {
+  const { pengguna, galat } = await pastikanBerhak();
+  if (!pengguna) return { ok: false, pesan: galat ?? "Tidak berhak.", id: null };
+
+  const bersih = judul.trim() || "Naskah tanpa judul";
+  if (isi.trim() === "") {
+    return { ok: false, pesan: "Naskahnya kosong.", id: null };
+  }
+
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("draf")
+    .insert({
+      judul: bersih.slice(0, 120),
+      jenis: jenis || "Lainnya",
+      isi,
+      keterangan: "Disusun dengan modul AI, lalu dikirim langsung ke sini.",
+      dibuat_oleh: pengguna.id,
+    })
+    .select("id")
+    .single();
+
+  if (error) return { ok: false, pesan: `Gagal disimpan: ${error.message}`, id: null };
+
+  segarkan();
+  return {
+    ok: true,
+    pesan: "Masuk ke Draf Bersama. Humas dan Digital Marketing bisa membahasnya di sana.",
+    id: data.id,
+  };
+}
+
+/** Menyimpan suntingan naskah pada draf berupa teks. */
+export async function simpanNaskahDraf(id: number, isi: string): Promise<Balasan> {
+  const { pengguna, galat } = await pastikanBerhak();
+  if (!pengguna) return { ok: false, pesan: galat ?? "Tidak berhak." };
+  if (isi.trim() === "") return { ok: false, pesan: "Naskahnya kosong." };
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("draf")
+    .update({ isi, diubah_pada: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) return { ok: false, pesan: `Gagal disimpan: ${error.message}` };
+
+  segarkan(id);
+  return { ok: true, pesan: "Naskah tersimpan." };
+}
+
 /** Mengunggah revisi. Versi lama tidak ditimpa. */
 export async function tambahRevisiDraf(_s: Hasil, formData: FormData): Promise<Hasil> {
   const { pengguna, galat } = await pastikanBerhak();

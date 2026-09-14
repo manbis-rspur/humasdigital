@@ -65,6 +65,8 @@ export type Draf = {
   keterangan: string | null;
   jenis: string;
   status: string;
+  /** Naskah teks, untuk draf yang datang langsung dari modul AI. */
+  isi: string | null;
   berkas_nama: string | null;
   berkas_ukuran: number | null;
   tautan: string | null;

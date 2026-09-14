@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { wajibHumas } from "@/lib/akses";
+import { punyaIzin, wajibHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { hapusRiwayat } from "@/lib/humas-actions";
 import { TampilHasil } from "@/components/tampil-hasil";
@@ -19,10 +19,15 @@ export default async function HalamanRiwayat({
   const q = await searchParams;
   const dibuka = typeof q.dokumen === "string" ? Number(q.dokumen) : null;
 
+  const bolehDraf = await punyaIzin("humas");
+
   const supabase = await createClient();
   const { data } = await supabase
     .from("riwayat_ai")
-    .select("id, modul_judul, judul, hasil, pada, pengguna:oleh(nama)")
+    // Seluruh kolom: tautan_docs baru ada setelah berkas SQL 41
+    // dijalankan, dan menyebut kolom yang belum ada membuat
+    // halamannya kosong sama sekali.
+    .select("*, pengguna:oleh(nama)")
     .order("pada", { ascending: false })
     .limit(100);
 
@@ -58,6 +63,8 @@ export default async function HalamanRiwayat({
             namaBerkas="dokumen-humas"
             riwayatId={terbuka.id}
             jenisArsip={terbuka.modul_judul}
+            tautanDocsAwal={terbuka.tautan_docs ?? null}
+            bolehKeDraf={bolehDraf}
           />
         </div>
       )}

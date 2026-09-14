@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { izinHumas, wajibHumas } from "@/lib/akses";
+import { izinHumas, punyaIzin, wajibHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { bacaKolom, type Kolom } from "@/lib/modul-ai";
 import { NAMA_BULAN, perasEvaluasi } from "@/lib/sosmed";
@@ -124,6 +124,7 @@ export default async function HalamanModul({
         namaModul={modul.judul}
         usulan={usulan}
         kunciCerita={kunciCerita}
+        bolehKeDraf={await punyaIzin("humas")}
       />
     </div>
   );
