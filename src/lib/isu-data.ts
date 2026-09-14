@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import {
   hariIniWIB,
@@ -17,8 +18,11 @@ function masihBerlaku(daftar: IsuRamai[], hariIni: Date): IsuRamai[] {
   return daftar.filter((i) => i.mulai <= patokan && (i.sampai === null || i.sampai >= patokan));
 }
 
-async function ambil() {
-  const supabase = await createClient();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type Klien = SupabaseClient<any, any, any>;
+
+async function ambil(klien?: Klien) {
+  const supabase = klien ?? (await createClient());
 
   const [{ data: hari }, { data: isu }] = await Promise.all([
     supabase
@@ -46,9 +50,9 @@ async function ambil() {
  * yang berkedip sewaktu orang sedang menulis justru memutus
  * pikirannya.
  */
-export async function bacaUsulan(sampaiHari = 90): Promise<Usulan[]> {
+export async function bacaUsulan(sampaiHari = 90, klien?: Klien): Promise<Usulan[]> {
   const hariIni = hariIniWIB();
-  const { hari, isu } = await ambil();
+  const { hari, isu } = await ambil(klien);
 
   return urutkanUsulan([
     ...usulanDariIsu(masihBerlaku(isu, hariIni), hariIni),
@@ -66,6 +70,7 @@ export async function bacaUsulan(sampaiHari = 90): Promise<Usulan[]> {
 export async function usulanUntukAI(
   mulai: string,
   selesai: string,
+  klien?: Klien,
 ): Promise<string | null> {
   const hariIni = hariIniWIB();
 
@@ -78,7 +83,7 @@ export async function usulanUntukAI(
 
   const jangkauan = akhir ? Math.max(0, selisihHari(awal, akhir)) : 90;
 
-  const { hari, isu } = await ambil();
+  const { hari, isu } = await ambil(klien);
   const hariTerkait = usulanDariHari(hari, awal, jangkauan);
   const isuTerkait = masihBerlaku(isu, hariIni);
 

@@ -1,0 +1,262 @@
+import { NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { aman, kirimBerkasTelegram, kirimTelegram } from "@/lib/telegram";
+import { jadikanPdf } from "@/lib/markdown-pdf";
+import {
+  perbaikiKalenderLewatTelegram,
+  ringkasKalender,
+  susunKalenderLewatTelegram,
+  type HasilKalender,
+} from "@/lib/kalender-telegram";
+
+/**
+ * Bot Telegram untuk Humas dan Digital Marketing.
+ *
+ * Gunanya satu: bisa menyusun dan memperbaiki kalender konten
+ * tanpa membuka komputer. Ide yang datang di hari libur tidak
+ * perlu menunggu Senin — drafnya sudah ada saat kembali ke meja.
+ *
+ * Telegram di sini jadi kendali jarak jauh, bukan layar. Perintah
+ * dan permintaan perbaikan memang pendek dan enak diketik di HP;
+ * kalendernya sendiri sembilan kolom dan belasan ribu huruf, jauh
+ * melewati batas satu pesan Telegram — jadi yang dikirim balik
+ * ringkasannya, berkas PDF-nya, dan tautan ke drafnya.
+ */
+
+export const maxDuration = 60;
+
+const ALAMAT_SITUS =
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : "https://humas-pemasaran.vercel.app");
+
+type Kiriman = {
+  update_id?: number;
+  message?: { text?: string; chat?: { id?: number | string } };
+};
+
+const sudah = () => NextResponse.json({ ok: true });
+
+function bantuan(): string {
+  return [
+    "<b>Cara memakai</b>",
+    "",
+    "<b>/kalender</b> lalu ceritakan kampanyenya:",
+    "<i>/kalender Oktober, angkat Hari Jantung Sedunia, dorong poli jantung, nada hangat</i>",
+    "",
+    "<b>/perbaiki</b> lalu sebutkan yang kurang:",
+    "<i>/perbaiki tambahkan konten donor darah di pekan kedua</i>",
+    "",
+    "<b>/draf</b> — daftar draf terakhir Anda",
+    "",
+    "Hasilnya masuk ke Draf Bersama dan dikirim balik ke sini sebagai PDF.",
+    "Menyetujui dan mengirim ke Koordinator tetap lewat web — itu perlu dibaca utuh.",
+  ].join("\n");
+}
+
+function namaBerkas(judul: string): string {
+  const bersih = judul
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 60);
+  return `${bersih || "kalender"}.pdf`;
+}
+
+/** Membalas hasil penyusunan: ringkasan, tautan, lalu berkasnya. */
+async function balasHasil(chat: string, h: HasilKalender, kepala: string) {
+  const baris = [
+    `✅ <b>${kepala}</b>`,
+    "",
+    aman(h.judul),
+    ringkasKalender(h.hasil ?? ""),
+    "",
+    `Buka &amp; sunting: ${ALAMAT_SITUS}/draf/${h.drafId}`,
+  ];
+
+  if (h.pesan) baris.push("", `⚠️ ${aman(h.pesan)}`);
+
+  await kirimTelegram(chat, baris.join("\n"));
+
+  try {
+    const pdf = jadikanPdf(h.judul, h.hasil ?? "");
+    await kirimBerkasTelegram(chat, namaBerkas(h.judul), pdf, aman(h.judul));
+  } catch (galat) {
+    // Berkasnya gagal dibuat, tapi kalendernya sudah tersimpan.
+    // Menyebut itu terang jauh lebih baik daripada diam, karena
+    // yang menunggu berkas akan mengira seluruhnya gagal.
+    const pesan = galat instanceof Error ? galat.message : String(galat);
+    await kirimTelegram(
+      chat,
+      `PDF-nya gagal dibuat (${aman(pesan)}), tapi kalendernya sudah tersimpan di draf.`,
+    );
+  }
+}
+
+export async function POST(permintaan: Request) {
+  const rahasia = process.env.TELEGRAM_WEBHOOK_SECRET;
+  if (!rahasia) return sudah();
+
+  if (permintaan.headers.get("x-telegram-bot-api-secret-token") !== rahasia) {
+    return new NextResponse("Tidak berhak.", { status: 401 });
+  }
+
+  let isi: Kiriman;
+  try {
+    isi = (await permintaan.json()) as Kiriman;
+  } catch {
+    return sudah();
+  }
+
+  const chatId = isi.message?.chat?.id;
+  const teks = (isi.message?.text ?? "").trim();
+  if (chatId === undefined || teks === "") return sudah();
+
+  const chat = String(chatId);
+  const db = createAdminClient();
+
+  /**
+   * Nomor pesan dicatat lebih dulu, sebelum apa pun dikerjakan.
+   *
+   * Menyusun kalender butuh setengah menit, dan Telegram mengirim
+   * ulang pesan yang belum dijawab. Nomor yang sudah tercatat
+   * berarti pesan itu sedang dikerjakan — kiriman ulangnya berhenti
+   * di sini, bukan jadi kalender kedua.
+   */
+  if (typeof isi.update_id === "number") {
+    const { error } = await db
+      .from("telegram_pesan")
+      .insert({ update_id: isi.update_id });
+    if (error) return sudah();
+  }
+
+  const { data: pengguna } = await db
+    .from("pengguna")
+    .select("id, nama")
+    .eq("telegram_chat_id", chat)
+    .maybeSingle();
+
+  if (!pengguna) {
+    await kirimTelegram(
+      chat,
+      [
+        "Nomor percakapan ini belum tersambung ke Dashboard Humas &amp; Pemasaran.",
+        "",
+        `Nomor percakapan Anda: <b>${chat}</b>`,
+        "",
+        `Buka ${ALAMAT_SITUS} dan tempelkan nomor itu di halaman Profil.`,
+      ].join("\n"),
+    );
+    return sudah();
+  }
+
+  // Draf Bersama hanya untuk Humas dan Digital Marketing, dan bot
+  // ini tidak boleh jadi pintu belakang yang melewati aturan itu.
+  const { data: izin } = await db
+    .from("akses_modul")
+    .select("modul")
+    .eq("pengguna_id", pengguna.id)
+    .eq("modul", "humas")
+    .maybeSingle();
+
+  if (!izin) {
+    await kirimTelegram(
+      chat,
+      "Bot ini hanya untuk Humas dan Digital Marketing.",
+    );
+    return sudah();
+  }
+
+  const spasi = teks.indexOf(" ");
+  const perintah = (spasi === -1 ? teks : teks.slice(0, spasi)).toLowerCase().split("@")[0];
+  const sisa = spasi === -1 ? "" : teks.slice(spasi + 1).trim();
+
+  if (perintah === "/start") {
+    await kirimTelegram(
+      chat,
+      `Halo ${aman(pengguna.nama.split(",")[0])}. Telegram Anda sudah tersambung.\n\n${bantuan()}`,
+    );
+    return sudah();
+  }
+
+  if (perintah === "/bantuan" || perintah === "/help") {
+    await kirimTelegram(chat, bantuan());
+    return sudah();
+  }
+
+  if (perintah === "/draf") {
+    const { data: daftar } = await db
+      .from("draf")
+      .select("id, judul, status, dibuat_pada")
+      .eq("dibuat_oleh", pengguna.id)
+      .order("dibuat_pada", { ascending: false })
+      .limit(5);
+
+    if (!daftar || daftar.length === 0) {
+      await kirimTelegram(chat, "Belum ada draf yang Anda buat.");
+      return sudah();
+    }
+
+    await kirimTelegram(
+      chat,
+      ["<b>Draf terakhir Anda</b>", ""]
+        .concat(
+          daftar.map(
+            (d) =>
+              `• ${aman(d.judul)} — ${aman(d.status)}\n  ${ALAMAT_SITUS}/draf/${d.id}`,
+          ),
+        )
+        .join("\n"),
+    );
+    return sudah();
+  }
+
+  if (perintah === "/kalender" || perintah === "/perbaiki") {
+    if (sisa === "") {
+      await kirimTelegram(
+        chat,
+        perintah === "/kalender"
+          ? "Ceritakan kampanyenya sesudah perintahnya. Contoh:\n<i>/kalender Oktober, angkat Hari Jantung Sedunia, dorong poli jantung</i>"
+          : "Sebutkan yang perlu diperbaiki. Contoh:\n<i>/perbaiki tambahkan konten donor darah di pekan kedua</i>",
+      );
+      return sudah();
+    }
+
+    await kirimTelegram(
+      chat,
+      perintah === "/kalender"
+        ? "Sedang disusun, sekitar setengah menit…"
+        : "Sedang diperbaiki, sekitar setengah menit…",
+    );
+
+    const hasil =
+      perintah === "/kalender"
+        ? await susunKalenderLewatTelegram(pengguna.id, sisa)
+        : await perbaikiKalenderLewatTelegram(pengguna.id, sisa);
+
+    if (!hasil.ok) {
+      await kirimTelegram(chat, `Gagal: ${aman(hasil.pesan)}`);
+      return sudah();
+    }
+
+    await balasHasil(
+      chat,
+      hasil,
+      perintah === "/kalender" ? "Kalender tersusun" : "Draf diperbaiki",
+    );
+
+    // Sekalian membuang catatan pesan lama, supaya tidak perlu
+    // penjadwal tersendiri yang jatahnya memang terbatas.
+    await db.rpc("bersihkan_telegram_pesan");
+    return sudah();
+  }
+
+  await kirimTelegram(
+    chat,
+    perintah.startsWith("/")
+      ? `Perintah ${aman(perintah)} belum ada.\n\n${bantuan()}`
+      : `Mulai dengan sebuah perintah supaya tidak salah tafsir.\n\n${bantuan()}`,
+  );
+  return sudah();
+}

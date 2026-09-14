@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { Layanan } from "@/lib/layanan";
 
@@ -10,8 +11,11 @@ import type { Layanan } from "@/lib/layanan";
  * yang tidak punya poli sendiri tidak pernah terangkat: Medical
  * Check Up, Radiologi, Laboratorium, Ambulans, pelayanan BPJS.
  */
-export async function daftarLayananUntukAI(): Promise<string | null> {
-  const supabase = await createClient();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type Klien = SupabaseClient<any, any, any>;
+
+export async function daftarLayananUntukAI(klien?: Klien): Promise<string | null> {
+  const supabase = klien ?? (await createClient());
 
   const { data } = await supabase
     .from("layanan")

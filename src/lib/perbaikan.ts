@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
@@ -49,6 +50,7 @@ export async function mintaPerbaikan({
   instansi,
   naskah,
   permintaan,
+  klien,
 }: {
   namaDokumen: string;
   instruksi: string | null;
@@ -60,6 +62,12 @@ export async function mintaPerbaikan({
   instansi: string | null;
   naskah: string;
   permintaan: string;
+  /**
+   * Dititipkan bot Telegram, yang bekerja tanpa sesi login dan
+   * karena itu memakai kunci layanan.
+   */
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  klien?: SupabaseClient<any, any, any>;
 }): Promise<HasilPerbaikan> {
   const minta = permintaan.trim();
   if (minta === "") return { hasil: null, pesan: "Tulis dulu apa yang perlu diperbaiki." };
@@ -90,15 +98,15 @@ export async function mintaPerbaikan({
   // dan hari kesehatan yang tepat — sama seperti saat pertama
   // disusun.
   if (pakaiIsu) {
-    const bahan = await usulanUntukAI("", "");
+    const bahan = await usulanUntukAI("", "", klien);
     if (bahan) perintah.push({ text: bahan });
   }
   if (untukRspur && pakaiLayanan) {
-    const layanan = await daftarLayananUntukAI();
+    const layanan = await daftarLayananUntukAI(klien);
     if (layanan) perintah.push({ text: layanan });
   }
   if (untukRspur && pakaiDokter) {
-    const dokter = await daftarDokterUntukAI();
+    const dokter = await daftarDokterUntukAI(klien);
     if (dokter) perintah.push({ text: dokter });
   }
 

@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { HARI, ringkasJadwal, type Sesi } from "@/lib/dokter";
 
@@ -11,8 +12,15 @@ import { HARI, ringkasJadwal, type Sesi } from "@/lib/dokter";
  * menyebut nama, ia akan mengarang. Untuk sebuah rumah sakit itu
  * jauh lebih buruk daripada tidak menyebut nama sama sekali.
  */
-export async function daftarDokterUntukAI(): Promise<string | null> {
-  const supabase = await createClient();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type Klien = SupabaseClient<any, any, any>;
+
+/**
+ * Klien boleh dititipkan dari luar: bot Telegram bekerja tanpa
+ * sesi login, jadi ia memakai kunci layanan.
+ */
+export async function daftarDokterUntukAI(klien?: Klien): Promise<string | null> {
+  const supabase = klien ?? (await createClient());
 
   const { data } = await supabase
     .from("dokter")
