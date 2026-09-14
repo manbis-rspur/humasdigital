@@ -46,17 +46,35 @@ export async function buatLaporan(_s: Hasil, formData: FormData): Promise<Hasil>
   const bulan = angka(formData, "bulan");
   const tahun = angka(formData, "tahun");
 
+  // Laporan boleh disusun untuk rumah sakit atau klinik lain.
+  // Namanya disimpan, bukan cuma dipilih saat membuat: seluruh
+  // naskahnya nanti disusun atas nama instansi itu, termasuk saat
+  // disusun ulang berbulan-bulan kemudian.
+  const untukRspur = formData.get("untuk_rspur") !== null;
+  const instansi = untukRspur
+    ? "RSPUR"
+    : String(formData.get("instansi") ?? "").trim() || "Instansi lain";
+
+  const akun = String(formData.get("akun") ?? "").trim();
+
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("laporan_sosmed")
-    .insert({ bulan, tahun, dibuat_oleh: pengguna.id })
+    .insert({
+      bulan,
+      tahun,
+      untuk_rspur: untukRspur,
+      instansi,
+      ...(akun === "" ? {} : { akun: akun.startsWith("@") ? akun : `@${akun}` }),
+      dibuat_oleh: pengguna.id,
+    })
     .select("id")
     .single();
 
   if (error) {
     return {
       pesan: error.message.includes("laporan_sekali_sebulan")
-        ? `Laporan ${NAMA_BULAN[bulan]} ${tahun} sudah ada. Buka yang itu saja.`
+        ? `Laporan ${NAMA_BULAN[bulan]} ${tahun} untuk ${instansi} sudah ada. Buka yang itu saja.`
         : `Gagal dibuat: ${error.message}`,
       berhasil: null,
     };
@@ -204,7 +222,22 @@ export async function susunLaporan(_s: Hasil, formData: FormData): Promise<Hasil
     return `${p} (@${laporan.akun.replace("@", "")})\n  ${isi}\n  Pertumbuhan pengikut: ${tumbuh >= 0 ? "+" : ""}${angkaRapi(tumbuh)}\n  Konten terbit: ${r.jumlah} · tayangan ${angkaRapi(r.tayangan)} · interaksi ${angkaRapi(r.interaksi)}`;
   }).join("\n\n");
 
-  const instruksi = `Anda menyusun laporan bulanan media sosial untuk unit Humas dan Digital Marketing Rumah Sakit Pertamedika Ummi Rosnati (RSPUR), akun Instagram dan TikTok @rspurosnati.
+  // Laporan untuk instansi lain tidak boleh menyebut RSPUR sama
+  // sekali — bukan hanya namanya, tapi juga layanan, dokter, dan
+  // angka yang tidak ada hubungannya dengan instansi itu.
+  const untukRspur = laporan.untuk_rspur !== false;
+  const namaInstansi = untukRspur
+    ? "Rumah Sakit Pertamedika Ummi Rosnati (RSPUR)"
+    : (laporan.instansi ?? "instansi ini");
+
+  const instruksi = `Anda menyusun laporan bulanan media sosial untuk unit Humas dan Digital Marketing ${namaInstansi}, akun Instagram dan TikTok ${laporan.akun}.
+${
+  untukRspur
+    ? ""
+    : `
+PENTING: laporan ini BUKAN untuk RS Pertamedika Ummi Rosnati. Jangan menyebut RSPUR, Pertamedika, atau Ummi Rosnati di mana pun. Jangan menyebut nama dokter, layanan, fasilitas, atau angka milik rumah sakit lain — yang Anda punya hanya data yang diberikan di bawah ini. Bagian yang perlu diisi sendiri oleh penyusunnya tandai dengan kurung siku, misalnya "[nama poliklinik]".
+`
+}
 
 Tulis dengan urutan bagian berikut, memakai judul markdown:
 
@@ -224,7 +257,7 @@ ATURAN YANG TIDAK BOLEH DILANGGAR:
 - Jangan menyebut nama pasien, kondisi medis perorangan, atau apa pun yang menyerempet rekam medis.
 - Bahasa Indonesia yang lugas dan enak dibaca. Hindari istilah asing yang tidak perlu, kecuali istilah baku seperti TOFU, MOFU, BOFU, dan reach.`;
 
-  const perintah = `LAPORAN BULANAN MEDIA SOSIAL RSPUR — ${bulan}
+  const perintah = `LAPORAN BULANAN MEDIA SOSIAL ${untukRspur ? "RSPUR" : namaInstansi} — ${bulan}
 
 CAPAIAN TINGKAT AKUN
 ${perAkun}

@@ -10,7 +10,7 @@ export default async function HalamanLaporan() {
   const supabase = await createClient();
   const { data } = await supabase
     .from("laporan_sosmed")
-    .select("id, bulan, tahun, akun, hasil, disusun_pada")
+    .select("*")
     .order("tahun", { ascending: false })
     .order("bulan", { ascending: false });
 
@@ -50,6 +50,7 @@ export default async function HalamanLaporan() {
                   {NAMA_BULAN[l.bulan]} {l.tahun}
                 </Link>
                 <p className="text-xs text-tinta-3">
+                  {l.untuk_rspur === false && `${l.instansi} · `}
                   {l.hasil ? "Naskah sudah tersusun" : "Belum disusun"}
                 </p>
               </div>

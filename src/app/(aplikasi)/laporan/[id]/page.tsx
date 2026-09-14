@@ -87,7 +87,14 @@ export default async function HalamanLaporanBulan({
         <h1 className="mt-2 text-2xl font-semibold tracking-tight">
           {NAMA_BULAN[l.bulan]} {l.tahun}
         </h1>
-        <p className="mt-1 text-tinta-2">Instagram dan TikTok {l.akun}</p>
+        <p className="mt-1 text-tinta-2">
+          {l.untuk_rspur === false && (
+            <span className="mr-2 rounded-full bg-[#f6efe2] px-2 py-0.5 text-xs font-semibold text-oker">
+              {l.instansi}
+            </span>
+          )}
+          Instagram dan TikTok {l.akun}
+        </p>
         {l.tenggat && <PenandaTenggat tenggat={l.tenggat} selesai={Boolean(l.hasil)} />}
         <RingkasKonten daftar={konten} />
       </div>
@@ -205,7 +212,9 @@ export default async function HalamanLaporanBulan({
           )}
 
           <TampilHasil
-            judul={`Laporan Media Sosial — ${NAMA_BULAN[l.bulan]} ${l.tahun}`}
+            judul={`Laporan Media Sosial${
+              l.untuk_rspur === false ? ` ${l.instansi}` : ""
+            } — ${NAMA_BULAN[l.bulan]} ${l.tahun}`}
             hasil={l.hasil}
             namaBerkas={`laporan-sosmed-${l.tahun}-${String(l.bulan).padStart(2, "0")}`}
           />
