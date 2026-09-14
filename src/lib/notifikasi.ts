@@ -68,8 +68,14 @@ export async function bacaLonceng(): Promise<IsiLonceng> {
 
   const supabase = await createClient();
 
-  const [{ data: saya }, { data: riwayat }, { data: laporan }, { data: arsip }] =
-    await Promise.all([
+  const [
+    { data: saya },
+    { data: riwayat },
+    { data: laporan },
+    { data: arsip },
+    { data: draf },
+    { data: catatanDraf },
+  ] = await Promise.all([
       supabase
         .from("pengguna")
         .select("notifikasi_dilihat_pada")
@@ -91,6 +97,19 @@ export async function bacaLonceng(): Promise<IsiLonceng> {
           "id, judul, jenis, diunggah_pada, diunggah_oleh, status_tinjauan, catatan_tinjauan, ditinjau_pada, ditinjau_oleh, pengguna:diunggah_oleh(nama), peninjau:ditinjau_oleh(nama)",
         )
         .order("diunggah_pada", { ascending: false })
+        .limit(BANYAK),
+      // Draf bersama dan percakapannya. Yang bukan pemegang izin
+      // 'humas' tidak mendapat satu baris pun dari dua kueri ini —
+      // dijawab RLS, sama seperti kalau halamannya dibuka langsung.
+      supabase
+        .from("draf")
+        .select("id, judul, jenis, status, dibuat_oleh, dibuat_pada, diubah_pada")
+        .order("dibuat_pada", { ascending: false })
+        .limit(BANYAK),
+      supabase
+        .from("draf_komentar")
+        .select("id, isi, pada, oleh, draf_id, penulis:oleh(nama), draf(judul)")
+        .order("pada", { ascending: false })
         .limit(BANYAK),
     ]);
 
@@ -149,6 +168,34 @@ export async function bacaLonceng(): Promise<IsiLonceng> {
         olehSaya: false,
       });
     }
+  }
+
+  for (const d of draf ?? []) {
+    daftar.push({
+      kunci: `draf-${d.id}-${d.status}`,
+      ikon: "publikasi",
+      judul: `Draf ${d.jenis} — ${d.status}`,
+      rincian: potong(d.judul),
+      waktu: d.diubah_pada ?? d.dibuat_pada,
+      tautan: `/draf/${d.id}`,
+      // Perubahan tahap bisa dilakukan siapa saja di antara berdua,
+      // jadi yang dipakai di sini pembuatnya. Yang membuat draf
+      // memang tidak perlu dikabari soal drafnya sendiri.
+      olehSaya: d.dibuat_oleh === pengguna.id,
+    });
+  }
+
+  for (const k of catatanDraf ?? []) {
+    const judulDraf = Array.isArray(k.draf) ? k.draf[0] : k.draf;
+    daftar.push({
+      kunci: `catatan-draf-${k.id}`,
+      ikon: "obrolan",
+      judul: `Catatan pada draf ${potong(judulDraf?.judul, 35) || "bersama"}`,
+      rincian: `${potong(k.isi)} — ${nama(k.penulis) || "anggota unit"}`,
+      waktu: k.pada,
+      tautan: `/draf/${k.draf_id}`,
+      olehSaya: k.oleh === pengguna.id,
+    });
   }
 
   daftar.sort((a, b) => b.waktu.localeCompare(a.waktu));

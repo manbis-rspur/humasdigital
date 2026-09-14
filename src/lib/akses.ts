@@ -85,3 +85,21 @@ export async function wajibSosmed(): Promise<PenggunaAktif> {
   if (!(await bolehAkses("sosmed"))) redirect("/tanpa-akses");
   return pengguna;
 }
+
+
+/**
+ * Izin yang benar-benar diberikan, bukan yang ditembus.
+ *
+ * bolehAkses() mengizinkan Admin menembus semua modul — disengaja,
+ * supaya ada jalan pemulihan saat ada yang keliru. Untuk hal yang
+ * memang tidak boleh ditembus siapa pun, dipakai pemeriksaan ini.
+ *
+ * Draf bersama contohnya: peran Admin suatu saat bisa berpindah ke
+ * orang yang tidak seharusnya membaca pekerjaan yang masih setengah
+ * jadi.
+ */
+export async function punyaIzin(modul: string): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("punya_izin", { p_modul: modul });
+  return data === true;
+}
