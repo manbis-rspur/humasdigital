@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { izinHumas } from "@/lib/akses";
+import { mintaPerbaikan, type HasilPerbaikan } from "@/lib/perbaikan";
 import { createClient } from "@/lib/supabase/server";
 import type { Balasan } from "@/lib/hasil";
 
@@ -57,4 +58,46 @@ export async function simpanTautanDocs(id: number, tautan: string): Promise<Bala
     ok: true,
     pesan: bersih === "" ? "Tautan dilepas." : "Tautan tersimpan di dokumen ini.",
   };
+}
+
+/**
+ * Meminta AI memperbaiki dokumen riwayat.
+ *
+ * Hasilnya TIDAK langsung disimpan. Yang meminta harus melihatnya
+ * dulu dan boleh membatalkan; menyimpan sendiri berarti dokumen
+ * yang tadinya benar bisa tertimpa tanpa sempat diperiksa.
+ */
+export async function perbaikiDokumen(
+  riwayatId: number,
+  naskah: string,
+  permintaan: string,
+): Promise<HasilPerbaikan> {
+  if ((await izinHumas()) === "tidak") {
+    return { hasil: null, pesan: "Anda tidak berhak mengubah dokumen ini." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: riwayat } = await supabase
+    .from("riwayat_ai")
+    .select("modul_id, modul_judul")
+    .eq("id", riwayatId)
+    .maybeSingle();
+
+  if (!riwayat) return { hasil: null, pesan: "Dokumennya tidak ditemukan lagi." };
+
+  // Modulnya boleh saja sudah dihapus. Dokumennya tetap bisa
+  // diperbaiki — yang hilang cuma aturan susunan khas modul itu.
+  const { data: modul } = riwayat.modul_id
+    ? await supabase.from("modul_ai").select("*").eq("id", riwayat.modul_id).maybeSingle()
+    : { data: null };
+
+  return mintaPerbaikan({
+    namaDokumen: riwayat.modul_judul,
+    instruksi: modul?.instruksi_sistem ?? null,
+    pakaiDokter: modul?.pakai_dokter === true,
+    pakaiIsu: modul?.pakai_isu === true,
+    naskah,
+    permintaan,
+  });
 }

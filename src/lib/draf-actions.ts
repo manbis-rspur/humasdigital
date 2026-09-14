@@ -7,6 +7,7 @@ import { punyaIzin } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JENIS_BERKAS_DRAF, jenisBerkasDrafDiterima, STATUS_DRAF } from "@/lib/draf";
+import { mintaPerbaikan, type HasilPerbaikan } from "@/lib/perbaikan";
 import type { Balasan, Hasil } from "@/lib/hasil";
 
 function isi(formData: FormData, nama: string) {
@@ -188,6 +189,52 @@ export async function simpanNaskahDraf(id: number, isi: string): Promise<Balasan
 
   segarkan(id);
   return { ok: true, pesan: "Naskah tersimpan." };
+}
+
+/**
+ * Meminta AI memperbaiki naskah draf.
+ *
+ * Perlu ada di sini juga, bukan cuma di halaman hasil. Yang
+ * terlupa sering baru ketahuan saat dibahas berdua — dan kalau
+ * perbaikannya harus lewat menyusun ulang, yang masuk ke daftar
+ * draf jadi dua naskah yang isinya hampir sama.
+ */
+export async function perbaikiNaskahDraf(
+  id: number,
+  naskah: string,
+  permintaan: string,
+): Promise<HasilPerbaikan> {
+  const { pengguna, galat } = await pastikanBerhak();
+  if (!pengguna) return { hasil: null, pesan: galat ?? "Tidak berhak." };
+
+  const supabase = await createClient();
+
+  const { data: draf } = await supabase
+    .from("draf")
+    .select("judul, jenis")
+    .eq("id", id)
+    .maybeSingle();
+
+  if (!draf) return { hasil: null, pesan: "Drafnya tidak ditemukan lagi." };
+
+  // Jenis draf memakai nama modul yang menyusunnya, jadi aturan
+  // susunan modul itu bisa ditemukan kembali dari sini. Kalau
+  // tidak ketemu — draf yang ditulis tangan, misalnya — dipakai
+  // aturan umum.
+  const { data: modul } = await supabase
+    .from("modul_ai")
+    .select("*")
+    .ilike("judul", draf.jenis)
+    .maybeSingle();
+
+  return mintaPerbaikan({
+    namaDokumen: draf.judul,
+    instruksi: modul?.instruksi_sistem ?? null,
+    pakaiDokter: modul?.pakai_dokter === true,
+    pakaiIsu: modul?.pakai_isu === true,
+    naskah,
+    permintaan,
+  });
 }
 
 /** Mengunggah revisi. Versi lama tidak ditimpa. */

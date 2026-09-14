@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Ikon from "@/components/ikon";
 import { SuntingDokumen } from "@/components/sunting-dokumen";
-import { simpanNaskahDraf } from "@/lib/draf-actions";
+import { perbaikiNaskahDraf, simpanNaskahDraf } from "@/lib/draf-actions";
 
 /**
  * Naskah draf yang datang langsung dari modul AI.
@@ -25,7 +25,12 @@ export function NaskahDraf({
 }) {
   const [naskah, setNaskah] = useState(isi);
   const [tersimpan, setTersimpan] = useState(isi);
+  /* Naskah yang dibaca penyunting tabel — hanya diganti saat isinya
+     datang dari luar, bukan tiap ketikan. */
+  const [benih, setBenih] = useState(isi);
   const [menyunting, setMenyunting] = useState(false);
+  const [permintaan, setPermintaan] = useState("");
+  const [sebelumPerbaikan, setSebelumPerbaikan] = useState<string | null>(null);
   const [kabar, setKabar] = useState<string | null>(null);
   const [sedang, mulai] = useTransition();
 
@@ -38,6 +43,36 @@ export function NaskahDraf({
       if (h.ok) setTersimpan(naskah);
       setTimeout(() => setKabar(null), 3000);
     });
+  }
+
+  /**
+   * Meminta AI memperbaiki naskah ini.
+   *
+   * Hasilnya tidak langsung disimpan, dan naskah sebelumnya
+   * disimpan supaya bisa dikembalikan. Perbaikan yang tidak bisa
+   * dibatalkan membuat orang takut mencobanya.
+   */
+  function perbaiki() {
+    mulai(async () => {
+      const h = await perbaikiNaskahDraf(id, naskah, permintaan);
+      if (h.hasil === null) {
+        setKabar(h.pesan ?? "Gagal memperbaiki.");
+      } else {
+        setSebelumPerbaikan(naskah);
+        setNaskah(h.hasil);
+        setBenih(h.hasil);
+        setPermintaan("");
+        setKabar(h.peringatan ?? "Sudah diperbaiki. Periksa dulu, lalu simpan naskahnya.");
+      }
+      setTimeout(() => setKabar(null), 4000);
+    });
+  }
+
+  function batalkanPerbaikan() {
+    if (sebelumPerbaikan === null) return;
+    setNaskah(sebelumPerbaikan);
+    setBenih(sebelumPerbaikan);
+    setSebelumPerbaikan(null);
   }
 
   async function salinBerbentuk(sasaran: HTMLElement | null) {
@@ -104,6 +139,44 @@ export function NaskahDraf({
 
       {kabar && <p className="text-sm text-hijau">{kabar}</p>}
 
+      {!terkunci && (
+        <div className="flex flex-col gap-2 rounded-lg border border-garis bg-permukaan-2 px-4 py-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-tinta-3">
+              Ada yang perlu diperbaiki?
+            </span>
+            <textarea
+              value={permintaan}
+              onChange={(e) => setPermintaan(e.target.value)}
+              rows={2}
+              placeholder="Misalnya: tambahkan konten donor darah di pekan kedua, dan ganti PIC baris 10 Oktober jadi Humas."
+              className="w-full rounded border border-garis bg-permukaan px-3 py-2 text-sm outline-none focus:border-hijau focus:ring-2 focus:ring-hijau-muda"
+            />
+          </label>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={perbaiki}
+              disabled={sedang || permintaan.trim() === ""}
+              className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60"
+            >
+              {sedang ? "Sedang dikerjakan…" : "Perbaiki naskah ini"}
+            </button>
+
+            {sebelumPerbaikan !== null && (
+              <button type="button" onClick={batalkanPerbaikan} className={kecil}>
+                Batalkan perbaikan
+              </button>
+            )}
+
+            <span className="text-xs text-tinta-3">
+              Naskah yang sama diperbaiki di tempat — tidak membuat draf baru.
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="overflow-x-auto">
         <div className="dokumen" hidden={menyunting}>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{naskah}</ReactMarkdown>
@@ -111,7 +184,7 @@ export function NaskahDraf({
 
         {!terkunci && (
           <div hidden={!menyunting}>
-            <SuntingDokumen isi={tersimpan} onUbah={setNaskah} />
+            <SuntingDokumen isi={benih} onUbah={setNaskah} />
           </div>
         )}
       </div>

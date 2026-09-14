@@ -7,7 +7,7 @@ import Ikon from "@/components/ikon";
 import { SuntingDokumen } from "@/components/sunting-dokumen";
 import { kirimKeArsip } from "@/lib/arsip-actions";
 import { drafDariNaskah } from "@/lib/draf-actions";
-import { simpanSuntingan, simpanTautanDocs } from "@/lib/riwayat-actions";
+import { perbaikiDokumen, simpanSuntingan, simpanTautanDocs } from "@/lib/riwayat-actions";
 import { adaTabel } from "@/lib/markdown-tabel";
 
 /**
@@ -41,6 +41,13 @@ export function TampilHasil({
   const [sumber, setSumber] = useState(hasil);
   const [naskah, setNaskah] = useState(hasil);
   const [tersimpan, setTersimpan] = useState(hasil);
+  /* Naskah yang dibaca penyunting tabel. Berbeda dari naskah yang
+     sedang berjalan: penyunting hanya perlu diurai ulang saat
+     isinya diganti dari luar, bukan tiap ketikan. */
+  const [benih, setBenih] = useState(hasil);
+  const [permintaan, setPermintaan] = useState("");
+  const [sebelumPerbaikan, setSebelumPerbaikan] = useState<string | null>(null);
+  const [waspada, setWaspada] = useState<string | null>(null);
   const [tampilan, setTampilan] = useState<"rapi" | "sunting" | "mentah">("rapi");
   const [kabar, setKabar] = useState<string | null>(null);
   const [sibuk, setSibuk] = useState<string | null>(null);
@@ -56,6 +63,8 @@ export function TampilHasil({
     setSumber(hasil);
     setNaskah(hasil);
     setTersimpan(hasil);
+    setBenih(hasil);
+    setSebelumPerbaikan(null);
   }
 
   const belumSimpan = naskah !== tersimpan;
@@ -92,6 +101,42 @@ export function TampilHasil({
     setSibuk(null);
     beriKabar(h.pesan);
     if (h.ok && h.id) setKeDraf(h.id);
+  }
+
+  /**
+   * Meminta AI memperbaiki dokumen yang sudah ada.
+   *
+   * Hasilnya tidak langsung disimpan, dan naskah sebelumnya
+   * disimpan di sini supaya bisa dikembalikan. Perbaikan yang tidak
+   * bisa dibatalkan membuat orang takut mencobanya.
+   */
+  async function perbaiki() {
+    if (riwayatId === null) return;
+
+    setSibuk("Memperbaiki…");
+    const h = await perbaikiDokumen(riwayatId, naskah, permintaan);
+    setSibuk(null);
+
+    if (h.hasil === null) {
+      beriKabar(h.pesan ?? "Gagal memperbaiki.");
+      return;
+    }
+
+    setSebelumPerbaikan(naskah);
+    setNaskah(h.hasil);
+    setBenih(h.hasil);
+    setPermintaan("");
+    setWaspada(h.peringatan ?? null);
+    beriKabar("Sudah diperbaiki. Periksa dulu, lalu simpan.");
+  }
+
+  function batalkanPerbaikan() {
+    if (sebelumPerbaikan === null) return;
+    setNaskah(sebelumPerbaikan);
+    setBenih(sebelumPerbaikan);
+    setSebelumPerbaikan(null);
+    setWaspada(null);
+    beriKabar("Dikembalikan ke naskah sebelum perbaikan.");
   }
 
   async function simpanDocs() {
@@ -289,7 +334,7 @@ export function TampilHasil({
             dicopot saat berpindah ke tampilan rapi, suntingan yang
             belum disimpan ikut hilang — dan hilangnya diam-diam. */}
         <div hidden={tampilan !== "sunting"}>
-          <SuntingDokumen isi={tersimpan} onUbah={setNaskah} />
+          <SuntingDokumen isi={benih} onUbah={setNaskah} />
         </div>
 
         <pre className="text-xs whitespace-pre-wrap" hidden={tampilan !== "mentah"}>
@@ -302,6 +347,51 @@ export function TampilHasil({
           Dokumen ini tidak berisi tabel, jadi seluruhnya disunting sebagai teks
           biasa.
         </p>
+      )}
+
+      {bisaSimpan && (
+        <div className="flex flex-col gap-2 rounded-lg border border-garis bg-permukaan-2 px-4 py-3">
+          <label className="flex flex-col gap-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-tinta-3">
+              Ada yang perlu diperbaiki?
+            </span>
+            <textarea
+              value={permintaan}
+              onChange={(e) => setPermintaan(e.target.value)}
+              rows={2}
+              placeholder="Misalnya: tambahkan konten donor darah di pekan kedua, dan ganti PIC baris 10 Oktober jadi Humas."
+              className="w-full rounded border border-garis bg-permukaan px-3 py-2 text-sm outline-none focus:border-hijau focus:ring-2 focus:ring-hijau-muda"
+            />
+          </label>
+
+          {waspada && (
+            <p className="rounded border-l-4 border-oker bg-[#f6efe2] px-3 py-2 text-sm">
+              {waspada}
+            </p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={perbaiki}
+              disabled={!!sibuk || permintaan.trim() === ""}
+              className={utama}
+            >
+              Perbaiki dokumen ini
+            </button>
+
+            {sebelumPerbaikan !== null && (
+              <button type="button" onClick={batalkanPerbaikan} className={kecil}>
+                Batalkan perbaikan
+              </button>
+            )}
+
+            <span className="text-xs text-tinta-3">
+              Dokumen yang sama diperbaiki di tempat — tidak membuat dokumen
+              baru, jadi daftar riwayat dan draf tidak menumpuk.
+            </span>
+          </div>
+        </div>
       )}
 
       {bisaSimpan && (
