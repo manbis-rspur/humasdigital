@@ -94,6 +94,56 @@ async function balasHasil(chat: string, h: HasilKalender, kepala: string) {
   }
 }
 
+/**
+ * Mengabari rekan satu unit bahwa ada kalender baru.
+ *
+ * Draf Bersama itu ruang kerja berdua. Kalender yang disusun pada
+ * hari libur tapi tidak diketahui siapa pun sampai Senin cuma
+ * setengah berguna — yang ditunggu justru masukan dari sebelah.
+ *
+ * Berkasnya ikut dikirim, bukan cuma tautannya: yang sedang libur
+ * membuka PDF di HP jauh lebih mungkin daripada membuka dashboard.
+ */
+async function kabariRekan(
+  /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+  db: any,
+  penyusunId: number,
+  penyusunNama: string,
+  h: HasilKalender,
+) {
+  const { data: rekan } = await db
+    .from("pengguna")
+    .select("id, nama, telegram_chat_id, akses_modul!inner(modul)")
+    .eq("akses_modul.modul", "humas")
+    .neq("id", penyusunId)
+    .not("telegram_chat_id", "is", null);
+
+  if (!rekan || rekan.length === 0) return;
+
+  let pdf: Uint8Array | null = null;
+  try {
+    pdf = jadikanPdf(h.judul, h.hasil ?? "");
+  } catch {
+    // Tanpa berkas pun kabarnya tetap layak dikirim.
+  }
+
+  const pesan = [
+    `📄 <b>Kalender baru dari ${aman(penyusunNama.split(",")[0])}</b>`,
+    "",
+    aman(h.judul),
+    ringkasKalender(h.hasil ?? ""),
+    "",
+    `Baca &amp; beri masukan: ${ALAMAT_SITUS}/draf/${h.drafId}`,
+  ].join("\n");
+
+  for (const r of rekan as { telegram_chat_id: string }[]) {
+    await kirimTelegram(r.telegram_chat_id, pesan);
+    if (pdf) {
+      await kirimBerkasTelegram(r.telegram_chat_id, namaBerkas(h.judul), pdf, aman(h.judul));
+    }
+  }
+}
+
 export async function POST(permintaan: Request) {
   const rahasia = process.env.TELEGRAM_WEBHOOK_SECRET;
   if (!rahasia) return sudah();
@@ -251,6 +301,13 @@ export async function POST(permintaan: Request) {
       hasil,
       perintah === "/kalender" ? "Kalender tersusun" : "Draf diperbaiki",
     );
+
+    // Hanya kalender baru yang dikabarkan ke rekan. Tiap perbaikan
+    // kecil ikut dikabarkan berarti rekan dibanjiri berkas yang
+    // hampir sama — dan yang dibanjiri berhenti membaca.
+    if (perintah === "/kalender") {
+      await kabariRekan(db, pengguna.id, pengguna.nama, hasil);
+    }
 
     // Sekalian membuang catatan pesan lama, supaya tidak perlu
     // penjadwal tersendiri yang jatahnya memang terbatas.

@@ -83,10 +83,15 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
           <div className="flex items-center gap-2.5 border-l border-garis pl-4">
             <Lonceng daftar={lonceng.daftar} baru={lonceng.baru} />
 
-            <span className="hidden text-right leading-tight sm:block">
+            <Link
+              prefetch={false}
+              href="/profil"
+              className="hidden rounded-lg px-2 py-1 text-right leading-tight hover:bg-permukaan-2 sm:block"
+              title="Profil saya"
+            >
               <span className="block text-sm font-medium">{pengguna.nama}</span>
               <span className="block text-xs text-tinta-3">{pengguna.jabatan}</span>
-            </span>
+            </Link>
 
             <form action={keluar}>
               <button
