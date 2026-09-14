@@ -128,7 +128,13 @@ export async function POST(permintaan: Request) {
     const { error } = await db
       .from("telegram_pesan")
       .insert({ update_id: isi.update_id });
-    if (error) return sudah();
+
+    // Hanya nomor kembar yang berarti "sudah dikerjakan". Sebab
+    // lain — tabelnya belum ada, database sedang terganggu —
+    // tidak boleh membuat bot diam total tanpa ada yang tahu;
+    // lebih baik dikerjakan dengan risiko kembar daripada
+    // perintahnya hilang tanpa jejak.
+    if (error?.code === "23505") return sudah();
   }
 
   const { data: pengguna } = await db
