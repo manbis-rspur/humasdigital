@@ -1,7 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
-import { jalankanModul, type HasilSusun } from "@/lib/humas-actions";
+import { useState, useTransition } from "react";
+import { jalankanModul, siapkanRujukan, type HasilSusun } from "@/lib/humas-actions";
+import { unggahLewatIzin } from "@/lib/unggah-berkas";
+import { ACCEPT_DATA, MAKS_DATA } from "@/lib/berkas-jenis";
 import { TampilHasil } from "@/components/tampil-hasil";
 import { kunciLain, type Kolom } from "@/lib/modul-ai";
 
@@ -121,16 +123,83 @@ export function FormJalankan({
   namaBerkas: string;
   namaModul: string;
 }) {
-  const [hasil, kirim, sedang] = useActionState(jalankanModul, awal);
+  const [hasil, setHasil] = useState<HasilSusun>(awal);
+  const [tahap, setTahap] = useState<string | null>(null);
+  const [sedang, mulai] = useTransition();
+
+  /**
+   * Berkas rujukan naik lebih dulu, baru modulnya dijalankan.
+   *
+   * Urutannya harus begitu: berkasnya tidak boleh lewat server
+   * action — batas kirimannya 1 MB, dan foto atau panduan merek
+   * gampang melewatinya. Yang lewat aksi cuma alamat berkasnya.
+   */
+  async function kirim(formData: FormData) {
+    setHasil(awal);
+
+    const berkas = formData
+      .getAll("rujukan_berkas")
+      .filter((b): b is File => b instanceof File && b.size > 0);
+
+    formData.delete("rujukan_berkas");
+
+    const jalur: string[] = [];
+    for (const [nomor, b] of berkas.entries()) {
+      if (b.size > MAKS_DATA) {
+        setHasil({ ...awal, pesan: `${b.name} terlalu besar untuk dijadikan rujukan.` });
+        return;
+      }
+
+      setTahap(`Mengunggah rujukan ${nomor + 1} dari ${berkas.length}…`);
+      const naik = await unggahLewatIzin(b, siapkanRujukan);
+      if (naik.jalur === null) {
+        setTahap(null);
+        setHasil({ ...awal, pesan: naik.pesan });
+        return;
+      }
+      jalur.push(naik.jalur);
+    }
+
+    if (jalur.length > 0) formData.set("rujukan", jalur.join("\n"));
+
+    setTahap(berkas.length > 0 ? "Membaca rujukan dan menyusun…" : null);
+    setHasil(await jalankanModul(awal, formData));
+    setTahap(null);
+  }
 
   return (
     <div className="flex flex-col gap-8">
-      <form action={kirim} className="flex flex-col gap-5">
+      <form
+        action={(formData) => mulai(() => kirim(formData))}
+        className="flex flex-col gap-5"
+      >
         <input type="hidden" name="modul_id" value={modulId} />
 
         {kolom.map((k) => (
           <IsianKolom key={k.kunci} k={k} />
         ))}
+
+        {/* Rujukan opsional: foto ruangan, panduan merek, kerangka
+            acuan acara, contoh konten sebelumnya. Dibaca AI sebagai
+            bahan, lalu berkas mentahnya dibuang — yang berharga hasil
+            susunannya, bukan salinan berkas yang menumpuk. */}
+        <fieldset className="rounded-lg border border-garis px-3 py-2.5">
+          <legend className="px-1 text-xs font-semibold uppercase tracking-wider text-tinta-3">
+            Lampiran rujukan
+          </legend>
+          <input
+            type="file"
+            name="rujukan_berkas"
+            multiple
+            accept={ACCEPT_DATA}
+            className={`${gaya} w-full file:mr-3 file:rounded file:border-0 file:bg-permukaan-2 file:px-3 file:py-1.5 file:text-sm file:font-medium`}
+          />
+          <p className="mt-2 text-xs text-tinta-3">
+            Boleh dikosongkan. Foto, PDF, Word, Excel, atau CSV — misalnya foto
+            ruangan, panduan merek, kerangka acuan acara, atau contoh konten
+            sebelumnya. Isinya dibaca sebagai bahan, lalu berkasnya dibuang.
+          </p>
+        </fieldset>
 
         {hasil.pesan && (
           <p className="rounded-lg border-l-2 border-merah bg-permukaan-2 px-3 py-2 text-sm text-merah">
@@ -143,7 +212,7 @@ export function FormJalankan({
           disabled={sedang}
           className="w-fit rounded-lg bg-hijau px-5 py-2.5 font-medium text-white hover:opacity-90 disabled:opacity-60"
         >
-          {sedang ? "Sedang menyusun…" : "Susun dokumen"}
+          {sedang ? (tahap ?? "Sedang menyusun…") : "Susun dokumen"}
         </button>
 
         {sedang && (

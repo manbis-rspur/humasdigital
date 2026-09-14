@@ -2,6 +2,8 @@ import "server-only";
 import PizZip from "pizzip";
 import type { Bagian } from "@/lib/ai";
 
+export { ACCEPT_DATA, JENIS_DATA, MAKS_DATA, jenisDataDiterima } from "@/lib/berkas-jenis";
+
 /**
  * Mengubah berkas rekapan jadi sesuatu yang bisa dibaca Gemini.
  *
@@ -16,29 +18,6 @@ import type { Bagian } from "@/lib/ai";
  *     dibagikan dalam bentuk itu, dan memaksanya jadi teks lebih
  *     dulu justru merusak susunan tabelnya.
  */
-
-export const JENIS_DATA = [
-  ".csv",
-  ".tsv",
-  ".txt",
-  ".xlsx",
-  ".docx",
-  ".pdf",
-  ".png",
-  ".jpg",
-  ".jpeg",
-  ".webp",
-] as const;
-
-export const ACCEPT_DATA = JENIS_DATA.join(",");
-
-/** Berkas rekapan jarang besar; batas ini menjaga tagihan Gemini. */
-export const MAKS_DATA = 15 * 1024 * 1024;
-
-export function jenisDataDiterima(nama: string): boolean {
-  const n = nama.toLowerCase();
-  return JENIS_DATA.some((akhiran) => n.endsWith(akhiran));
-}
 
 const MIME_GAMBAR: Record<string, string> = {
   ".png": "image/png",

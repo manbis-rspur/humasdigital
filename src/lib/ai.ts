@@ -39,11 +39,15 @@ export type Bagian =
   | { inlineData: { mimeType: string; data: string } };
 
 export async function susunDenganAI(
-  perintah: string,
+  perintah: string | Bagian[],
   instruksiSistem: string,
   suhu = 0.7,
 ): Promise<string> {
-  return panggilGemini([{ text: perintah }], instruksiSistem, suhu, false);
+  // Boleh berupa tulisan saja, boleh tulisan berikut berkas rujukan
+  // — foto ruangan, panduan merek, kerangka acuan acara. Bentuk lama
+  // tetap diterima supaya modul yang sudah ada tidak perlu diubah.
+  const bagian = typeof perintah === "string" ? [{ text: perintah }] : perintah;
+  return panggilGemini(bagian, instruksiSistem, suhu, false);
 }
 
 /**

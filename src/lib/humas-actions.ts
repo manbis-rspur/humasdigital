@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { getPenggunaAktif } from "@/lib/auth";
 import { izinHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
-import { susunDenganAI } from "@/lib/ai";
+import { susunDenganAI, type Bagian } from "@/lib/ai";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
 import { bacaKolom, kunciLain, susunPerintah } from "@/lib/modul-ai";
 
 export type HasilSusun = {
@@ -19,6 +21,70 @@ export type HasilSusun = {
  * mengirimnya ke Gemini, lalu menyimpan hasilnya sebagai riwayat
  * milik tim.
  */
+/**
+ * Izin sekali-pakai untuk menaruh satu berkas rujukan.
+ *
+ * Berkasnya naik dari peramban langsung ke penyimpanan — server
+ * action hanya menerima kiriman 1 MB, dan foto atau panduan merek
+ * gampang melewatinya.
+ */
+export type IzinRujukan =
+  | { jalur: string; token: string; pesan: null }
+  | { jalur: null; token: null; pesan: string };
+
+export async function siapkanRujukan(namaBerkas: string): Promise<IzinRujukan> {
+  const tolak = (pesan: string): IzinRujukan => ({ jalur: null, token: null, pesan });
+
+  const pengguna = await getPenggunaAktif();
+  if (!pengguna || (await izinHumas()) === "tidak") {
+    return tolak("Anda tidak berhak memakai modul ini.");
+  }
+
+  if (!jenisDataDiterima(namaBerkas)) {
+    return tolak(
+      `${namaBerkas} belum didukung. Yang bisa dibaca: gambar, PDF, Word, Excel, dan CSV.`,
+    );
+  }
+
+  const bersih = namaBerkas.replace(/[^\w.\-]+/g, "-").slice(-80);
+  const jalur = `modul/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${bersih}`;
+
+  const { data, error } = await createAdminClient()
+    .storage.from("dokumen")
+    .createSignedUploadUrl(jalur);
+
+  if (error || !data) {
+    return tolak(`Gagal menyiapkan unggahan: ${error?.message ?? "tidak diketahui"}`);
+  }
+
+  return { jalur: data.path, token: data.token, pesan: null };
+}
+
+/**
+ * Membaca berkas rujukan lalu menyiapkannya untuk dikirim ke AI.
+ *
+ * Berkas mentahnya dibuang sesudah dibaca: yang berharga hasil
+ * susunannya, dan menyimpan rujukan sekali pakai cuma menumpuk
+ * penyimpanan yang tidak pernah dibuka lagi.
+ */
+async function bacaRujukan(jalur: string[]): Promise<Bagian[]> {
+  if (jalur.length === 0) return [];
+
+  const db = createAdminClient();
+  const bagian: Bagian[] = [];
+
+  for (const j of jalur) {
+    const { data: berkas } = await db.storage.from("dokumen").download(j);
+    if (!berkas || berkas.size > MAKS_DATA) continue;
+
+    const siap = siapkanKiriman(j, await berkas.arrayBuffer());
+    if (siap.bagian) bagian.push(siap.bagian);
+  }
+
+  await db.storage.from("dokumen").remove(jalur);
+  return bagian;
+}
+
 export async function jalankanModul(
   _s: HasilSusun,
   formData: FormData,
@@ -74,12 +140,31 @@ export async function jalankanModul(
     }
   }
 
+  const jalurRujukan = String(formData.get("rujukan") ?? "")
+    .split("\n")
+    .map((j) => j.trim())
+    .filter((j) => j !== "");
+
+  const rujukan = await bacaRujukan(jalurRujukan);
+
+  const perintah: Bagian[] =
+    rujukan.length === 0
+      ? [{ text: susunPerintah(modul.pola_perintah, isian) }]
+      : [
+          {
+            text:
+              `${susunPerintah(modul.pola_perintah, isian)}\n\n` +
+              `Berkas rujukan berikut dilampirkan oleh yang meminta. Pakai isinya ` +
+              `sebagai bahan — nama, angka, gaya, atau suasana yang terlihat di ` +
+              `sana. Jangan mengarang apa yang tidak ada di dalamnya, dan sebutkan ` +
+              `bila ada yang tidak terbaca.`,
+          },
+          ...rujukan,
+        ];
+
   let hasil: string;
   try {
-    hasil = await susunDenganAI(
-      susunPerintah(modul.pola_perintah, isian),
-      modul.instruksi_sistem,
-    );
+    hasil = await susunDenganAI(perintah, modul.instruksi_sistem);
   } catch (galat) {
     const pesan = galat instanceof Error ? galat.message : "Gagal menghubungi Gemini.";
     return { pesan, hasil: null, judul: "", riwayatId: null };
