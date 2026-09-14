@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ubahAktifDokter } from "@/lib/dokter-actions";
 import { kelompokPoli, ringkasJadwal, type Dokter, type Sesi } from "@/lib/dokter";
 import { DokterBaru } from "./baru";
-import { ImporJadwal } from "./impor";
+import { AmbilDariSitus, ImporJadwal } from "./impor";
 
 /**
  * Daftar dokter spesialis.
@@ -46,6 +46,8 @@ export default async function HalamanDokter() {
         </p>
       </div>
 
+      <AmbilDariSitus />
+
       <ImporJadwal />
 
       <DokterBaru daftarPoli={daftarPoli} />
@@ -54,8 +56,8 @@ export default async function HalamanDokter() {
         <div className="rounded-xl border border-garis bg-permukaan px-5 py-10 text-center shadow-lembut">
           <p className="font-medium">Belum ada dokter yang terdaftar.</p>
           <p className="mt-1 text-sm text-tinta-3">
-            Unggah berkas jadwal poliklinik di atas — sekali unggah, seluruh
-            daftarnya terisi.
+            Tekan &ldquo;Baca sekarang&rdquo; di atas — daftarnya diambil
+            langsung dari situs rumah sakit.
           </p>
         </div>
       ) : (

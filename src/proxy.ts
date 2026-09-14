@@ -3,7 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured, supabaseAnonKey, supabaseUrl } from "@/lib/env";
 
 /** Halaman yang boleh dibuka tanpa login. */
-const TERBUKA = ["/login", "/auth", "/tanpa-akses"];
+// "/api" ikut terbuka karena penjadwal Vercel memanggilnya tanpa
+// sesi. Penjaganya kunci rahasia di kepala permintaan, bukan
+// pemeriksaan di sini.
+const TERBUKA = ["/login", "/auth", "/tanpa-akses", "/api"];
 
 /**
  * Berjalan sebelum setiap halaman dibuka:

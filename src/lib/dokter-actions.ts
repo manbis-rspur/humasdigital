@@ -6,6 +6,8 @@ import { punyaIzin } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { bacaBerkasDokter } from "@/lib/dokter-impor";
+import { ambilDariWeb } from "@/lib/dokter-web";
+import { kosongkanDokter, tanamDokter } from "@/lib/dokter-simpan";
 import type { DokterBaca, LembarDokter, Sesi } from "@/lib/dokter";
 import type { Balasan, Hasil } from "@/lib/hasil";
 
@@ -122,9 +124,8 @@ export async function simpanJadwalDokter(_s: Hasil, formData: FormData): Promise
   const supabase = await createClient();
 
   if (ganti) {
-    // Jadwalnya ikut terhapus sendiri lewat on delete cascade.
-    const { error } = await supabase.from("dokter").delete().gt("id", 0);
-    if (error) return { pesan: `Gagal mengosongkan daftar: ${error.message}`, berhasil: null };
+    const galatKosong = await kosongkanDokter(supabase);
+    if (galatKosong) return { pesan: galatKosong, berhasil: null };
   }
 
   const hasil = await tanamDokter(supabase, pilihan.dokter);
@@ -142,52 +143,45 @@ export async function simpanJadwalDokter(_s: Hasil, formData: FormData): Promise
   };
 }
 
-type Klien = Awaited<ReturnType<typeof createClient>>;
+/**
+ * Membaca daftar dokter dari situs rspur.co.id, tanpa menyimpan.
+ *
+ * Ditunjukkan dulu seperti pada berkas Excel. Situsnya milik kita
+ * sendiri, tapi susunannya bisa berubah tanpa pemberitahuan — dan
+ * yang bisa menilai hasil bacanya masuk akal hanya orangnya.
+ */
+export async function bacaDokterDariWeb(): Promise<
+  { dokter: DokterBaca[]; pesan: null } | { dokter: null; pesan: string }
+> {
+  const galat = await pastikanBerhak();
+  if (galat) return { dokter: null, pesan: galat };
 
-async function tanamDokter(supabase: Klien, daftar: DokterBaca[]) {
-  const baris = daftar.map((d, urutan) => ({
-    poliklinik: d.poliklinik,
-    nama: d.nama,
-    urutan,
-    // Dokter tanpa satu pun jam praktik dipadamkan, bukan dibuang.
-    // Ia memang sedang tidak praktik — jadwalnya tutup, cuti, atau
-    // izin praktiknya belum terbit — dan konten tidak boleh
-    // mengajak orang datang menemuinya. Namanya tetap disimpan
-    // supaya tidak perlu diketik ulang saat ia kembali.
-    aktif: d.jadwal.length > 0,
-    diubah_pada: new Date().toISOString(),
-  }));
+  return ambilDariWeb();
+}
 
-  const { data, error } = await supabase
-    .from("dokter")
-    .upsert(baris, { onConflict: "poliklinik,nama" })
-    .select("id, poliklinik, nama");
+/** Menyimpan daftar dokter yang barusan dibaca dari situs. */
+export async function simpanDokterDariWeb(_s: Hasil, formData: FormData): Promise<Hasil> {
+  const galat = await pastikanBerhak();
+  if (galat) return { pesan: galat, berhasil: null };
 
-  if (error) return { jumlah: 0, pesan: `Gagal menyimpan: ${error.message}` };
+  const dibaca = await ambilDariWeb();
+  if (dibaca.dokter === null) return { pesan: dibaca.pesan, berhasil: null };
 
-  const peta = new Map<string, number>();
-  for (const d of data ?? []) peta.set(`${d.poliklinik}|${d.nama}`, d.id);
+  const supabase = await createClient();
 
-  const id = [...peta.values()];
-  if (id.length > 0) {
-    await supabase.from("dokter_jadwal").delete().in("dokter_id", id);
+  if (isi(formData, "cara") === "ganti") {
+    const galatKosong = await kosongkanDokter(supabase);
+    if (galatKosong) return { pesan: galatKosong, berhasil: null };
   }
 
-  const sesi: { dokter_id: number; hari: number; jam: string }[] = [];
-  for (const d of daftar) {
-    const dokterId = peta.get(`${d.poliklinik}|${d.nama}`);
-    if (!dokterId) continue;
-    for (const s of d.jadwal) sesi.push({ dokter_id: dokterId, hari: s.hari, jam: s.jam });
-  }
+  const hasil = await tanamDokter(supabase, dibaca.dokter);
+  if (hasil.pesan) return { pesan: hasil.pesan, berhasil: null };
 
-  if (sesi.length > 0) {
-    const { error: galatSesi } = await supabase.from("dokter_jadwal").insert(sesi);
-    if (galatSesi) {
-      return { jumlah: peta.size, pesan: `Jadwalnya gagal disimpan: ${galatSesi.message}` };
-    }
-  }
-
-  return { jumlah: peta.size, pesan: null };
+  segarkan();
+  return {
+    pesan: null,
+    berhasil: `${hasil.jumlah} dokter tersimpan dari rspur.co.id.`,
+  };
 }
 
 /** Menambah atau memperbaiki satu dokter dengan tangan. */
