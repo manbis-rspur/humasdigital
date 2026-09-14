@@ -1,18 +1,29 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { jalankanModul, siapkanRujukan, type HasilSusun } from "@/lib/humas-actions";
 import { unggahLewatIzin } from "@/lib/unggah-berkas";
 import { ACCEPT_DATA, MAKS_DATA } from "@/lib/berkas-jenis";
 import { TampilHasil } from "@/components/tampil-hasil";
 import { kunciLain, type Kolom } from "@/lib/modul-ai";
+import type { Usulan } from "@/lib/isu";
+import { PanelUsulan } from "./panel-usulan";
 
 const awal: HasilSusun = { pesan: null, hasil: null, judul: "", riwayatId: null };
 
 const gaya =
   "rounded border border-garis bg-permukaan px-3 py-2 outline-none focus:border-hijau focus:ring-2 focus:ring-hijau-muda";
 
-function IsianKolom({ k }: { k: Kolom }) {
+function IsianKolom({
+  k,
+  nilai,
+  aturNilai,
+}: {
+  k: Kolom;
+  /** Terisi hanya untuk kotak yang isinya bisa diubah panel usulan. */
+  nilai?: string;
+  aturNilai?: (isi: string) => void;
+}) {
   const bawaan = k.bawaan;
 
   if (k.jenis === "checkbox") {
@@ -77,14 +88,26 @@ function IsianKolom({ k }: { k: Kolom }) {
     <label className="flex flex-col gap-1.5">
       {label}
       {k.jenis === "textarea" ? (
-        <textarea
-          name={k.kunci}
-          rows={5}
-          required={k.wajib}
-          placeholder={k.contoh}
-          defaultValue={typeof bawaan === "string" ? bawaan : undefined}
-          className={`${gaya} w-full`}
-        />
+        aturNilai ? (
+          <textarea
+            name={k.kunci}
+            rows={5}
+            required={k.wajib}
+            placeholder={k.contoh}
+            value={nilai ?? ""}
+            onChange={(e) => aturNilai(e.target.value)}
+            className={`${gaya} w-full`}
+          />
+        ) : (
+          <textarea
+            name={k.kunci}
+            rows={5}
+            required={k.wajib}
+            placeholder={k.contoh}
+            defaultValue={typeof bawaan === "string" ? bawaan : undefined}
+            className={`${gaya} w-full`}
+          />
+        )
       ) : k.jenis === "select" ? (
         <select
           name={k.kunci}
@@ -117,13 +140,24 @@ export function FormJalankan({
   kolom,
   namaBerkas,
   namaModul,
+  usulan,
+  kunciCerita,
 }: {
   modulId: number;
   kolom: Kolom[];
   namaBerkas: string;
   namaModul: string;
+  usulan: Usulan[];
+  kunciCerita: string | null;
 }) {
   const [hasil, setHasil] = useState<HasilSusun>(awal);
+  // Dimulai dari nilai bawaan kotaknya, bukan dari kosong: kalender
+  // yang dibuka dari sebuah laporan datang dengan kotaknya sudah
+  // terisi, dan mengosongkannya di sini menghapus isian itu.
+  const [cerita, setCerita] = useState(() => {
+    const k = kolom.find((x) => x.kunci === kunciCerita);
+    return typeof k?.bawaan === "string" ? k.bawaan : "";
+  });
   const [tahap, setTahap] = useState<string | null>(null);
   const [sedang, mulai] = useTransition();
 
@@ -175,9 +209,28 @@ export function FormJalankan({
       >
         <input type="hidden" name="modul_id" value={modulId} />
 
-        {kolom.map((k) => (
-          <IsianKolom key={k.kunci} k={k} />
-        ))}
+        {kolom.map((k) => {
+          const cerita_ini = k.kunci === kunciCerita;
+          return (
+            <Fragment key={k.kunci}>
+              <IsianKolom
+                k={k}
+                nilai={cerita_ini ? cerita : undefined}
+                aturNilai={cerita_ini ? setCerita : undefined}
+              />
+              {cerita_ini && (
+                <PanelUsulan
+                  daftar={usulan}
+                  onPilih={(kalimat) =>
+                    setCerita((lama) =>
+                      lama.trim() === "" ? kalimat : `${lama.trimEnd()}\n${kalimat}`,
+                    )
+                  }
+                />
+              )}
+            </Fragment>
+          );
+        })}
 
         {/* Rujukan opsional: foto ruangan, panduan merek, kerangka
             acuan acara, contoh konten sebelumnya. Dibaca AI sebagai

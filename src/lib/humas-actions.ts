@@ -6,6 +6,7 @@ import { izinHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
+import { usulanUntukAI } from "@/lib/isu-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
 import { bacaKolom, kunciLain, susunPerintah } from "@/lib/modul-ai";
@@ -157,6 +158,14 @@ export async function jalankanModul(
   // perintah balasan komplain hanya membuat AI salah fokus.
   const dokter = modul.pakai_dokter === true ? await daftarDokterUntukAI() : null;
 
+  // Bahan usulan tema: hari kesehatan pada rentang yang diminta,
+  // dan isu yang sedang ramai. Rentangnya dibaca dari isian, supaya
+  // kalender bulan Maret tidak diberi tahu soal Hari Ibu.
+  const bahan =
+    modul.pakai_isu === true
+      ? await usulanUntukAI(isian.tanggal_mulai ?? "", isian.tanggal_selesai ?? "")
+      : null;
+
   const perintah: Bagian[] =
     rujukan.length === 0
       ? [{ text: susunPerintah(modul.pola_perintah, isian) }]
@@ -177,6 +186,7 @@ export async function jalankanModul(
           ...rujukan,
         ];
 
+  if (bahan) perintah.push({ text: bahan });
   if (dokter) perintah.push({ text: dokter });
 
   let hasil: string;

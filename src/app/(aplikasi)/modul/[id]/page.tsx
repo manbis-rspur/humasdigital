@@ -4,6 +4,8 @@ import { izinHumas, wajibHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
 import { bacaKolom, type Kolom } from "@/lib/modul-ai";
 import { NAMA_BULAN, perasEvaluasi } from "@/lib/sosmed";
+import { bacaUsulan } from "@/lib/isu-data";
+import type { Usulan } from "@/lib/isu";
 import { FormJalankan } from "./form-jalankan";
 
 export default async function HalamanModul({
@@ -18,7 +20,10 @@ export default async function HalamanModul({
   const supabase = await createClient();
   const { data: modul } = await supabase
     .from("modul_ai")
-    .select("id, judul, deskripsi, kategori, kolom, bawaan")
+    // Seluruh kolom, bukan daftar tetap: penanda pakai_isu baru ada
+    // setelah berkas SQL 40 dijalankan, dan menyebut kolom yang
+    // belum ada membuat seluruh halaman modul gagal dimuat.
+    .select("*")
     .eq("id", Number(id))
     .maybeSingle();
 
@@ -54,6 +59,27 @@ export default async function HalamanModul({
       kolom = kolom.map((k) =>
         k.kunci === "evaluasi" ? { ...k, bawaan: isi } : k,
       );
+    }
+  }
+
+  /**
+   * Kotak mana yang boleh diisi panel usulan.
+   *
+   * Kotak cerita kampanye, itulah satu-satunya tempat yang masuk
+   * akal — panel ini ada untuk menolong orang memulai, dan yang
+   * sulit dimulai memang kotak itu.
+   */
+  let kunciCerita: string | null = null;
+  let usulan: Usulan[] = [];
+
+  if (modul.pakai_isu === true) {
+    const kotak =
+      kolom.find((k) => k.kunci === "topik" && k.jenis === "textarea") ??
+      kolom.find((k) => k.jenis === "textarea");
+
+    if (kotak) {
+      kunciCerita = kotak.kunci;
+      usulan = await bacaUsulan();
     }
   }
 
@@ -96,6 +122,8 @@ export default async function HalamanModul({
         kolom={kolom}
         namaBerkas={namaBerkas}
         namaModul={modul.judul}
+        usulan={usulan}
+        kunciCerita={kunciCerita}
       />
     </div>
   );

@@ -31,6 +31,9 @@ const MENU_DRAF: ButirMenu = { href: "/draf", label: "Draf Bersama", ikon: "obro
 /** Sumber nama dokter yang boleh disebut AI dalam konten. */
 const MENU_DOKTER: ButirMenu = { href: "/dokter", label: "Daftar Dokter", ikon: "pengguna" };
 
+/** Hari kesehatan dan isu yang sedang ramai, bahan usulan tema. */
+const MENU_ISU: ButirMenu = { href: "/isu", label: "Bahan Tema", ikon: "waktu" };
+
 export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
   const pengguna = await penggunaBerhak();
   const identitas = await bacaIdentitas();
@@ -39,7 +42,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
     : [...MENU];
 
   if (await bolehMcu()) menu.splice(1, 0, MENU_MCU);
-  if (await punyaIzin("humas")) menu.splice(1, 0, MENU_DRAF, MENU_DOKTER);
+  if (await punyaIzin("humas")) menu.splice(1, 0, MENU_DRAF, MENU_DOKTER, MENU_ISU);
 
   const lonceng = await bacaLonceng();
 
