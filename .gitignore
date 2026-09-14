@@ -42,3 +42,6 @@ next-env.d.ts
 
 # contoh isian kunci boleh ikut ke GitHub, isinya kosong
 !.env.example
+
+# berkas percobaan sementara
+.uji/
