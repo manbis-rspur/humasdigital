@@ -96,7 +96,9 @@ function IsianKolom({ k }: { k: Kolom }) {
       ) : (
         <input
           name={k.kunci}
-          type={k.jenis === "number" ? "number" : "text"}
+          type={
+            k.jenis === "number" ? "number" : k.jenis === "date" ? "date" : "text"
+          }
           required={k.wajib}
           placeholder={k.contoh}
           defaultValue={typeof bawaan === "string" ? bawaan : undefined}

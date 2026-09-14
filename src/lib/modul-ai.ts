@@ -11,6 +11,7 @@ export type JenisKolom =
   | "textarea"
   | "select"
   | "number"
+  | "date"
   | "checkbox"
   | "multiselect";
 
