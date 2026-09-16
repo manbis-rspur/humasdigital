@@ -3,6 +3,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { aman, kirimBerkasTelegram, kirimTelegram } from "@/lib/telegram";
 import { jadikanPdf } from "@/lib/markdown-pdf";
 import {
+  ADMIN_SITUS,
+  catatPerubahanJadwal,
+  periksaPerubahanJadwal,
+  sebutPerubahan,
+} from "@/lib/jadwal-telegram";
+import {
   perbaikiKalenderLewatTelegram,
   ringkasKalender,
   susunKalenderLewatTelegram,
@@ -50,8 +56,14 @@ function bantuan(): string {
     "",
     "<b>/draf</b> — daftar draf terakhir Anda",
     "",
-    "Hasilnya masuk ke Draf Bersama dan dikirim balik ke sini sebagai PDF.",
+    "<b>/jadwal</b> lalu sebutkan perubahan jadwal dokternya:",
+    "<i>/jadwal Sabtu dr. Nurjannah libur, diganti dr. Wahdini jam 10-12</i>",
+    "",
+    "<b>/cek</b> — memeriksa apakah perubahan tadi sudah terbit di rspur.co.id",
+    "",
+    "Hasil kalender masuk ke Draf Bersama dan dikirim balik ke sini sebagai PDF.",
     "Menyetujui dan mengirim ke Koordinator tetap lewat web — itu perlu dibaca utuh.",
+    "Jadwal dokter juga tetap Anda ubah sendiri di admin situs; saya mencatat dan memeriksa.",
   ].join("\n");
 }
 
@@ -265,6 +277,99 @@ export async function POST(permintaan: Request) {
         )
         .join("\n"),
     );
+    return sudah();
+  }
+
+  if (perintah === "/jadwal") {
+    if (sisa === "") {
+      await kirimTelegram(
+        chat,
+        "Sebutkan perubahannya sesudah perintahnya. Contoh:\n<i>/jadwal Sabtu dr. Nurjannah libur, diganti dr. Wahdini jam 10-12</i>",
+      );
+      return sudah();
+    }
+
+    const hasil = await catatPerubahanJadwal(pengguna.id, sisa);
+
+    if (!hasil.ok) {
+      await kirimTelegram(chat, `Gagal: ${aman(hasil.pesan)}`);
+      return sudah();
+    }
+
+    const baris = ["📋 <b>Perubahan yang perlu diterapkan</b>", ""];
+
+    hasil.dicatat.forEach((p, urutan) => {
+      baris.push(
+        `${urutan + 1}. <b>${aman(p.dokter_nama)}</b>` +
+          (p.poliklinik ? ` — ${aman(p.poliklinik)}` : ""),
+        `   ${aman(sebutPerubahan(p))}`,
+      );
+    });
+
+    if (hasil.belumCocok.length > 0) {
+      baris.push(
+        "",
+        `⚠️ Nama ini tidak ada di daftar dokter: ${aman(hasil.belumCocok.join(", "))}. ` +
+          `Saya tetap catat, tapi periksa ejaannya.`,
+      );
+    }
+
+    if (hasil.pesan) baris.push("", `⚠️ ${aman(hasil.pesan)}`);
+
+    baris.push(
+      "",
+      `Ubah di admin situs: ${ADMIN_SITUS}`,
+      "Sudah diubah? Balas <b>/cek</b> — saya baca ulang situsnya.",
+    );
+
+    await kirimTelegram(chat, baris.join("\n"));
+    return sudah();
+  }
+
+  if (perintah === "/cek") {
+    await kirimTelegram(chat, "Sedang membaca rspur.co.id…");
+
+    const hasil = await periksaPerubahanJadwal();
+
+    if (!hasil.ok) {
+      await kirimTelegram(chat, `Gagal memeriksa: ${aman(hasil.pesan)}`);
+      return sudah();
+    }
+
+    if (hasil.pesan) {
+      await kirimTelegram(chat, hasil.pesan);
+      return sudah();
+    }
+
+    const baris: string[] = [];
+
+    if (hasil.sudah.length > 0) {
+      baris.push("✅ <b>Sudah terbit di situs</b>");
+      for (const { p } of hasil.sudah) {
+        baris.push(`• ${aman(p.dokter_nama)} — ${aman(sebutPerubahan(p))}`);
+      }
+      baris.push("");
+    }
+
+    if (hasil.belum.length > 0) {
+      baris.push("⚠️ <b>Belum berubah di situs</b>");
+      for (const { p, sekarang } of hasil.belum) {
+        baris.push(
+          `• ${aman(p.dokter_nama)} — ${aman(sebutPerubahan(p))}`,
+          `   sekarang masih: ${aman(sekarang)}`,
+        );
+      }
+      baris.push("", `Ubah di admin situs: ${ADMIN_SITUS}`);
+    }
+
+    if (hasil.ragu.length > 0) {
+      baris.push("", "❓ <b>Tidak bisa saya pastikan sendiri</b>");
+      for (const p of hasil.ragu) {
+        baris.push(`• ${aman(p.instruksi.slice(0, 120))}`);
+      }
+    }
+
+    await kirimTelegram(chat, baris.join("\n"));
     return sudah();
   }
 
