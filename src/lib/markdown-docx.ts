@@ -95,6 +95,21 @@ function potongTebal(baris: string, ukuran?: number): TextRun[] {
 const HURUF = "Tahoma";
 const UKURAN = 24;
 
+/**
+ * Jarak daftar berpoin dan bernomor, dalam twip (1.440 per inci).
+ *
+ * MENJOROK adalah jarak seluruh butir dari tepi kiri; MENGGANTUNG
+ * adalah jarak dari nomor ke tulisannya. Bawaan docx jauh lebih
+ * lebar dari ini — nomornya seakan terpisah sendiri dari
+ * kalimatnya.
+ *
+ * Dipasang pada paragrafnya, bukan hanya pada aturan penomoran.
+ * Yang dipasang di aturan penomoran saja tidak bisa digeser
+ * dengan penggaris Word; yang di paragraf bisa.
+ */
+const MENJOROK = 340;
+const MENGGANTUNG = 230;
+
 const GARIS = { style: BorderStyle.SINGLE, size: 2, color: "D6D3CC" };
 
 function buatTabel(blok: Extract<Blok, { jenis: "tabel" }>): Table {
@@ -285,6 +300,7 @@ export async function jadikanWord(
             children: potongTebal(poin[1]),
             bullet: { level: 0 },
             alignment: AlignmentType.JUSTIFIED,
+            indent: { left: MENJOROK, hanging: MENGGANTUNG },
           }),
         );
         continue;
@@ -297,6 +313,7 @@ export async function jadikanWord(
             children: potongTebal(bernomor[1]),
             numbering: { reference: "daftar-bernomor", level: 0 },
             alignment: AlignmentType.JUSTIFIED,
+            indent: { left: MENJOROK, hanging: MENGGANTUNG },
           }),
         );
         continue;
@@ -331,7 +348,17 @@ export async function jadikanWord(
       config: [
         {
           reference: "daftar-bernomor",
-          levels: [{ level: 0, format: "decimal", text: "%1.", alignment: AlignmentType.START }],
+          levels: [
+            {
+              level: 0,
+              format: "decimal",
+              text: "%1.",
+              alignment: AlignmentType.START,
+              style: {
+                paragraph: { indent: { left: MENJOROK, hanging: MENGGANTUNG } },
+              },
+            },
+          ],
         },
       ],
     },
