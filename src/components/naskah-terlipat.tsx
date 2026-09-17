@@ -143,7 +143,9 @@ export function NaskahTerlipat({
                 )}
 
                 <a
-                  href={`/draf/${drafId}/bagian?bentuk=word&judul=${encodeURIComponent(b.judul)}`}
+                  href={`/draf/${drafId}/bagian?bentuk=word&kop=${
+                    kopBawaan ? kopBawaan.id : "tanpa"
+                  }&judul=${encodeURIComponent(b.judul)}`}
                   className={gayaUnduh}
                 >
                   <Ikon nama="unduh" ukuran={13} />

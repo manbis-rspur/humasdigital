@@ -2,7 +2,9 @@ import "server-only";
 import {
   AlignmentType,
   Document,
+  Header,
   HeadingLevel,
+  ImageRun,
   Packer,
   Paragraph,
   Table,
@@ -11,6 +13,8 @@ import {
   TextRun,
   WidthType,
 } from "docx";
+import { bacaUkuranGambar } from "@/lib/ukuran-gambar";
+import type { Kop } from "@/lib/markdown-pdf";
 
 /**
  * Mengubah dokumen hasil susunan AI menjadi berkas Word.
@@ -86,7 +90,58 @@ function buatTabel(baris: string[]): Table {
   });
 }
 
-export async function jadikanWord(judul: string, markdown: string): Promise<Buffer> {
+/**
+ * Menyusun kop surat jadi kepala halaman Word.
+ *
+ * Dipasang sebagai header dokumen, bukan gambar di baris pertama.
+ * Gambar di baris pertama ikut bergeser begitu isinya bertambah;
+ * header tetap di tempatnya, dan itulah yang membuat berkasnya
+ * terbaca sebagai dokumen resmi — bukan naskah yang kebetulan
+ * diawali gambar.
+ *
+ * Halaman pertama saja: titlePage membuat header ini hanya
+ * berlaku di sana, seperti kebiasaan surat resmi.
+ */
+function kepalaKop(kop: Kop): Header | null {
+  const ukuran = bacaUkuranGambar(kop.isi);
+  if (!ukuran || ukuran.lebar === 0 || ukuran.tinggi === 0) return null;
+
+  // Lebar isi halaman A4 tegak dengan tepi baku, dalam titik.
+  const LEBAR_ISI = 450;
+  const TINGGI_MAKS = 110;
+
+  let lebar = LEBAR_ISI;
+  let tinggi = (LEBAR_ISI * ukuran.tinggi) / ukuran.lebar;
+
+  // Kop yang terlalu tinggi menelan halaman pertama. Diperkecil
+  // menurut perbandingan aslinya, bukan digepengkan.
+  if (tinggi > TINGGI_MAKS) {
+    tinggi = TINGGI_MAKS;
+    lebar = (TINGGI_MAKS * ukuran.lebar) / ukuran.tinggi;
+  }
+
+  return new Header({
+    children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 120 },
+        children: [
+          new ImageRun({
+            type: ukuran.jenis === "PNG" ? "png" : "jpg",
+            data: kop.isi,
+            transformation: { width: Math.round(lebar), height: Math.round(tinggi) },
+          }),
+        ],
+      }),
+    ],
+  });
+}
+
+export async function jadikanWord(
+  judul: string,
+  markdown: string,
+  kop?: Kop | null,
+): Promise<Buffer> {
   const baris = markdown.replace(/\r\n/g, "\n").split("\n");
   const isi: (Paragraph | Table)[] = [
     new Paragraph({
@@ -157,6 +212,8 @@ export async function jadikanWord(judul: string, markdown: string): Promise<Buff
     isi.push(new Paragraph({ children: potongTebal(bersih), spacing: { after: 120 } }));
   }
 
+  const kepala = kop ? kepalaKop(kop) : null;
+
   const dokumen = new Document({
     numbering: {
       config: [
@@ -166,7 +223,17 @@ export async function jadikanWord(judul: string, markdown: string): Promise<Buff
         },
       ],
     },
-    sections: [{ children: isi }],
+    sections: [
+      {
+        children: isi,
+        // titlePage membuat header di bawah hanya berlaku pada
+        // halaman pertama; tanpa header default, halaman
+        // berikutnya bersih.
+        ...(kepala
+          ? { properties: { titlePage: true }, headers: { first: kepala } }
+          : {}),
+      },
+    ],
   });
 
   return Packer.toBuffer(dokumen);

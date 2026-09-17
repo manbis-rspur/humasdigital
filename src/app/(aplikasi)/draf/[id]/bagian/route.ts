@@ -49,12 +49,11 @@ export async function GET(
       .replace(/^-|-$/g, "")
       .slice(0, 70) || "konsep";
 
+  const dipilih = alamat.searchParams.get("kop");
+  const kop = dipilih === "tanpa" ? null : await ambilKop(Number(dipilih) || null);
+
   if (bentuk === "word") {
-    // Word tidak memuat kop: kop di sana bukan gambar di kepala
-    // halaman melainkan bagian header dokumen, dan memasangnya
-    // setengah-setengah justru membuat berkasnya terlihat rusak
-    // saat dibuka.
-    const berkas = await jadikanWord(judul || (data.judul as string), bagian.isi);
+    const berkas = await jadikanWord(judul || (data.judul as string), bagian.isi, kop);
     return new NextResponse(new Uint8Array(berkas), {
       headers: {
         "Content-Type":
@@ -63,9 +62,6 @@ export async function GET(
       },
     });
   }
-
-  const dipilih = alamat.searchParams.get("kop");
-  const kop = dipilih === "tanpa" ? null : await ambilKop(Number(dipilih) || null);
 
   let berkas: Uint8Array;
   try {
