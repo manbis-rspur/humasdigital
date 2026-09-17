@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { JENIS_BERKAS_DRAF, jenisBerkasDrafDiterima, STATUS_DRAF } from "@/lib/draf";
 import { mintaPerbaikan, type HasilPerbaikan } from "@/lib/perbaikan";
+import { susunKonsepKonten } from "@/lib/konsep-konten";
+import type { BarisKalender } from "@/lib/kalender-baris";
 import type { Balasan, Hasil } from "@/lib/hasil";
 
 function isi(formData: FormData, nama: string) {
@@ -249,6 +251,56 @@ export async function perbaikiNaskahDraf(
     naskah,
     permintaan,
   });
+}
+
+/**
+ * Membuat brief produksi dari satu baris kalender, lalu
+ * menempelkannya ke draf yang sama.
+ *
+ * Ditempelkan, bukan dijadikan draf baru. Konsep itu milik
+ * kalender asalnya — dipisahkan, ia jadi potongan lepas yang
+ * sebulan kemudian tidak ada yang tahu asalnya dari mana, dan
+ * Draf Bersama penuh oleh serpihan.
+ */
+export async function buatKonsepKonten(
+  drafId: number,
+  baris: BarisKalender,
+  durasiVideo = 60,
+  maksCarousel = 4,
+): Promise<Balasan & { isi: string | null }> {
+  const { pengguna, galat } = await pastikanBerhak();
+  if (!pengguna) return { ok: false, pesan: galat ?? "Tidak berhak.", isi: null };
+
+  const supabase = await createClient();
+
+  const { data: draf } = await supabase
+    .from("draf")
+    .select("isi, status")
+    .eq("id", drafId)
+    .maybeSingle();
+
+  if (!draf?.isi) return { ok: false, pesan: "Drafnya tidak ditemukan.", isi: null };
+  if (draf.status === "Terkirim") {
+    return { ok: false, pesan: "Draf ini sudah dikirim ke arsip.", isi: null };
+  }
+
+  const konsep = await susunKonsepKonten(baris, { durasiVideo, maksCarousel });
+  if (konsep.hasil === null) return { ok: false, pesan: konsep.pesan, isi: null };
+
+  const kepala = ["Konsep", baris.tanggal, baris.format].filter(Boolean).join(" — ");
+  const baru = `${draf.isi.trimEnd()}\n\n---\n\n# ${kepala}\n\n${konsep.hasil}\n`;
+
+  const { error } = await supabase
+    .from("draf")
+    .update({ isi: baru, diubah_pada: new Date().toISOString() })
+    .eq("id", drafId);
+
+  if (error) {
+    return { ok: false, pesan: `Konsepnya jadi, tapi gagal disimpan: ${error.message}`, isi: null };
+  }
+
+  segarkan(drafId);
+  return { ok: true, pesan: "Konsep ditempelkan di bawah kalender.", isi: baru };
 }
 
 /** Mengunggah revisi. Versi lama tidak ditimpa. */

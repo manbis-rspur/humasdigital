@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import Ikon from "@/components/ikon";
 import { SuntingDokumen } from "@/components/sunting-dokumen";
 import { perbaikiNaskahDraf, simpanNaskahDraf } from "@/lib/draf-actions";
+import { KonsepKonten } from "./konsep";
 
 /**
  * Naskah draf yang datang langsung dari modul AI.
@@ -175,6 +176,21 @@ export function NaskahDraf({
             </span>
           </div>
         </div>
+      )}
+
+      {!terkunci && (
+        <KonsepKonten
+          drafId={id}
+          naskah={naskah}
+          onSelesai={(isiBaru) => {
+            // Peladen sudah menyimpannya, jadi ketiga salinan di
+            // sini disamakan — kalau tidak, tombol "Simpan naskah"
+            // muncul seolah ada suntingan yang belum tersimpan.
+            setNaskah(isiBaru);
+            setTersimpan(isiBaru);
+            setBenih(isiBaru);
+          }}
+        />
       )}
 
       <div className="overflow-x-auto">
