@@ -34,6 +34,7 @@ export function NaskahTerlipat({
   const konsep = bagian.filter((b) => b.judul !== "");
 
   const [terbuka, setTerbuka] = useState<Set<string>>(new Set());
+  const [kabar, setKabar] = useState<string | null>(null);
 
   function jungkit(judul: string) {
     setTerbuka((lama) => {
@@ -57,6 +58,35 @@ export function NaskahTerlipat({
 
   const gayaUnduh =
     "inline-flex items-center gap-1.5 rounded border border-garis px-2.5 py-1 text-xs font-medium text-tinta-2 hover:bg-permukaan-2";
+
+  /**
+   * Menyalin satu konsep beserta bentuknya.
+   *
+   * Yang disalin tampilan yang sudah jadi, bukan tulisan mentah —
+   * sehingga saat ditempel ke Google Docs tabelnya tetap tabel,
+   * bukan deretan tanda garis tegak. Ini jalan ke Google Docs
+   * tanpa menyambungkan akun Google: menyambungkannya berarti
+   * memberi sistem ini izin atas seluruh Drive, untuk pekerjaan
+   * yang selesai dengan dua ketukan.
+   */
+  async function salinBagian(tombol: HTMLElement, mentah: string) {
+    const isiJadi = tombol.closest("section")?.querySelector(".isi-konsep");
+    if (!isiJadi) return;
+
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          "text/html": new Blob([isiJadi.innerHTML], { type: "text/html" }),
+          "text/plain": new Blob([mentah], { type: "text/plain" }),
+        }),
+      ]);
+      setKabar("Tersalin. Buka Docs baru, lalu tempel — tabelnya ikut.");
+    } catch {
+      await navigator.clipboard.writeText(mentah);
+      setKabar("Teks tersalin.");
+    }
+    setTimeout(() => setKabar(null), 3000);
+  }
 
   return (
     <div className="dokumen flex flex-col gap-3">
@@ -151,9 +181,31 @@ export function NaskahTerlipat({
                   <Ikon nama="unduh" ukuran={13} />
                   Word
                 </a>
+
+                <button
+                  type="button"
+                  onClick={(e) => salinBagian(e.currentTarget, b.isi)}
+                  className={gayaUnduh}
+                >
+                  Salin untuk Google Docs
+                </button>
+
+                <a
+                  href="https://docs.new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={gayaUnduh}
+                >
+                  Buka Docs baru
+                  <Ikon nama="panah" ukuran={12} />
+                </a>
               </div>
 
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.isi}</ReactMarkdown>
+              {kabar && <p className="mb-2 text-xs text-hijau">{kabar}</p>}
+
+              <div className="isi-konsep">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.isi}</ReactMarkdown>
+              </div>
             </div>
           </section>
         );
