@@ -45,15 +45,35 @@ import type { Kop } from "@/lib/markdown-pdf";
  */
 function potongTebal(baris: string, ukuran?: number): TextRun[] {
   const hasil: TextRun[] = [];
-  const bagian = baris.split(/(\*\*[^*]+\*\*)/g);
+
+  // Tebal (**begini**), miring (*begini*), dan kode (`begini`).
+  // Sebelumnya hanya yang tebal dikenali, jadi bintang tunggal
+  // ikut tercetak apa adanya — "*(Haornas)*" muncul lengkap dengan
+  // bintangnya di berkas Word.
+  const bagian = baris.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*|`[^`]+`)/g);
 
   for (const b of bagian) {
     if (!b) continue;
-    const tebal = b.startsWith("**") && b.endsWith("**");
+
+    const tebal = b.startsWith("**") && b.endsWith("**") && b.length > 4;
+    const miring = !tebal && b.startsWith("*") && b.endsWith("*") && b.length > 2;
+    const kode = b.startsWith("`") && b.endsWith("`") && b.length > 2;
+
+    let teks = b;
+    if (tebal) teks = b.slice(2, -2);
+    else if (miring || kode) teks = b.slice(1, -1);
+    // Penanda yang tersisa sendirian — bintang atau garis bawah
+    // yang pasangannya hilang — dibuang, bukan dicetak. Yang
+    // membaca berkas Word tidak tahu artinya penanda Markdown.
+    else teks = b.replace(/\*+/g, "").replace(/(^|\s)_(?=\S)|(?<=\S)_(?=\s|$)/g, "$1");
+
+    if (teks === "") continue;
+
     hasil.push(
       new TextRun({
-        text: tebal ? b.slice(2, -2) : b,
+        text: teks,
         bold: tebal,
+        italics: miring,
         font: HURUF,
         size: ukuran ?? UKURAN,
       }),
@@ -131,8 +151,9 @@ function buatTabel(blok: Extract<Blok, { jenis: "tabel" }>): Table {
                     nomor === 0
                       ? [
                           new TextRun({
-                            text: teks.replace(/\*\*/g, ""),
+                            text: teks.replace(/[*`]/g, ""),
                             bold: true,
+                            font: HURUF,
                             size: UKURAN,
                           }),
                         ]
@@ -200,7 +221,7 @@ export async function jadikanWord(
 ): Promise<Buffer> {
   const isi: (Paragraph | Table)[] = [
     new Paragraph({
-      children: [new TextRun({ text: judul, bold: true, size: 32, font: HURUF })],
+      children: [new TextRun({ text: judul, bold: true, size: 28, font: HURUF })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 300 },
     }),
@@ -259,7 +280,13 @@ export async function jadikanWord(
 
       const poin = bersih.match(/^[-*+]\s+(.*)$/);
       if (poin) {
-        isi.push(new Paragraph({ children: potongTebal(poin[1]), bullet: { level: 0 } }));
+        isi.push(
+          new Paragraph({
+            children: potongTebal(poin[1]),
+            bullet: { level: 0 },
+            alignment: AlignmentType.JUSTIFIED,
+          }),
+        );
         continue;
       }
 
@@ -269,12 +296,19 @@ export async function jadikanWord(
           new Paragraph({
             children: potongTebal(bernomor[1]),
             numbering: { reference: "daftar-bernomor", level: 0 },
+            alignment: AlignmentType.JUSTIFIED,
           }),
         );
         continue;
       }
 
-      isi.push(new Paragraph({ children: potongTebal(bersih), spacing: { after: 120 } }));
+      isi.push(
+        new Paragraph({
+          children: potongTebal(bersih),
+          spacing: { after: 120 },
+          alignment: AlignmentType.JUSTIFIED,
+        }),
+      );
     }
   }
 
@@ -286,9 +320,11 @@ export async function jadikanWord(
     styles: {
       default: {
         document: { run: { font: HURUF, size: UKURAN } },
-        heading1: { run: { font: HURUF, size: 32, bold: true } },
-        heading2: { run: { font: HURUF, size: 28, bold: true } },
-        heading3: { run: { font: HURUF, size: 26, bold: true } },
+        // Judul tetap bertingkat supaya susunannya kelihatan,
+        // tapi selisihnya dirapatkan ke 12 pt: 14, 13, lalu 12.
+        heading1: { run: { font: HURUF, size: 28, bold: true } },
+        heading2: { run: { font: HURUF, size: 26, bold: true } },
+        heading3: { run: { font: HURUF, size: UKURAN, bold: true } },
       },
     },
     numbering: {
