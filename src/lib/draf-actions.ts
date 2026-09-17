@@ -282,8 +282,8 @@ export async function buatKonsepKonten(
     .maybeSingle();
 
   if (!draf?.isi) return { ok: false, pesan: "Drafnya tidak ditemukan.", isi: null };
-  if (draf.status === "Terkirim") {
-    return { ok: false, pesan: "Draf ini sudah dikirim ke arsip.", isi: null };
+  if (draf.status === "Selesai") {
+    return { ok: false, pesan: "Draf ini sudah ditandai selesai.", isi: null };
   }
 
   const konsep = await susunKonsepKonten(

@@ -25,8 +25,10 @@ export function TombolStatus({ id, status }: { id: number; status: string }) {
     status === "Digarap"
       ? "Minta ditinjau"
       : status === "Minta ditinjau"
-        ? "Siap kirim"
-        : null;
+        ? "Disepakati"
+        : status === "Disepakati"
+          ? "Selesai"
+          : null;
 
   if (!berikutnya) return null;
 
@@ -47,19 +49,18 @@ export function TombolStatus({ id, status }: { id: number; status: string }) {
 /**
  * Mengembalikan draf ke tahap sebelumnya.
  *
- * Termasuk dari "Terkirim". Dulu tahap itu berarti sudah masuk
- * Arsip Manbis dan memang tidak boleh diutak-atik lagi. Sejak
- * pengiriman ke arsip dihapus, ia cuma berarti "selesai" — dan
- * tanpa jalan kembali, draf yang terlanjur bertanda itu terkunci
- * selamanya: tidak bisa disunting, tidak bisa dibuatkan konsep.
+ * Termasuk dari "Selesai". Naskah yang sudah selesai terkunci —
+ * itu memang gunanya — tapi tanpa jalan kembali, draf yang
+ * terlanjur ditandai jadi terkunci selamanya: tidak bisa
+ * disunting, tidak bisa dibuatkan konsep.
  */
 export function TombolKembali({ id, status }: { id: number; status: string }) {
   if (status === "Digarap") return null;
 
   const sebelumnya =
-    status === "Terkirim"
-      ? "Siap kirim"
-      : status === "Siap kirim"
+    status === "Selesai"
+      ? "Disepakati"
+      : status === "Disepakati"
         ? "Minta ditinjau"
         : "Digarap";
 

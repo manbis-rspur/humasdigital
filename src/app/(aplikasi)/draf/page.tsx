@@ -41,8 +41,8 @@ export default async function HalamanDraf() {
     pembuat: { nama: string } | { nama: string }[] | null;
   })[];
 
-  const digarap = semua.filter((d) => d.status !== "Terkirim");
-  const terkirim = semua.filter((d) => d.status === "Terkirim");
+  const digarap = semua.filter((d) => d.status !== "Selesai");
+  const selesai = semua.filter((d) => d.status === "Selesai");
 
   return (
     <div className="flex flex-col gap-7">
@@ -112,14 +112,14 @@ export default async function HalamanDraf() {
         </ul>
       )}
 
-      {terkirim.length > 0 && (
+      {selesai.length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-tinta-3">
             <Ikon nama="centang" ukuran={14} />
-            Sudah dikirim ke arsip
+            Sudah selesai
           </h2>
           <ul className="flex flex-col gap-1.5">
-            {terkirim.map((d) => (
+            {selesai.map((d) => (
               <li key={d.id} className="border-l-2 border-hijau pl-3 text-sm">
                 <Link prefetch={false} href={`/draf/${d.id}`} className="hover:underline">
                   {d.judul}

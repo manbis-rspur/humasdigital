@@ -6,11 +6,20 @@
  * berkas bertanda "use server" hanya boleh mengekspor fungsi async.
  */
 
+/**
+ * Tahap kerja sebuah draf.
+ *
+ * Dulu bernama "Siap kirim" dan "Terkirim", menurut pengiriman ke
+ * Arsip Manbis yang sekarang sudah dihapus. Nama yang tertinggal
+ * itu berbohong — ia menjanjikan ada yang dikirim ke suatu tempat,
+ * padahal tidak ada, dan orang baru akan mencarinya sampai
+ * menyerah.
+ */
 export const STATUS_DRAF = [
   "Digarap",
   "Minta ditinjau",
-  "Siap kirim",
-  "Terkirim",
+  "Disepakati",
+  "Selesai",
 ] as const;
 
 export const JENIS_DRAF = [
@@ -53,8 +62,8 @@ export function ukuranRapi(bita: number | null | undefined): string {
 }
 
 export function warnaStatusDraf(status: string): string {
-  if (status === "Terkirim") return "bg-hijau-muda text-hijau";
-  if (status === "Siap kirim") return "bg-[#dce4ec] text-[#2f4e6b]";
+  if (status === "Selesai") return "bg-hijau-muda text-hijau";
+  if (status === "Disepakati") return "bg-[#dce4ec] text-[#2f4e6b]";
   if (status === "Minta ditinjau") return "bg-[#f6efe2] text-oker";
   return "bg-permukaan-2 text-tinta-2";
 }

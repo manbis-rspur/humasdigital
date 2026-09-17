@@ -109,7 +109,7 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
   };
 
   const daftarRevisi = (revisi ?? []) as unknown as Revisi[];
-  const terkirim = d.status === "Terkirim";
+  const selesai = d.status === "Selesai";
 
   const percakapan: Komentar[] = (
     (komentar ?? []) as unknown as {
@@ -156,7 +156,7 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
         <NaskahDraf
           id={d.id}
           isi={d.isi}
-          terkunci={terkirim}
+          terkunci={selesai}
           kop={(dataKop ?? []) as unknown as KopSurat[]}
         />
       )}
@@ -214,12 +214,10 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
           Tahapan
         </h2>
 
-        {terkirim && (
+        {selesai && (
           <p className="text-sm text-tinta-2">
-            Ditandai selesai
-            {d.dikirim_pada && ` pada ${waktu.format(new Date(d.dikirim_pada))}`}.
-            Naskahnya terkunci — kembalikan ke tahap sebelumnya bila masih
-            perlu disunting atau dibuatkan konsep.
+            Ditandai selesai. Naskahnya terkunci — kembalikan ke tahap
+            sebelumnya bila masih perlu disunting atau dibuatkan konsep.
           </p>
         )}
 
@@ -229,7 +227,7 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
         </div>
       </section>
 
-      {!terkirim && <FormRevisiDraf id={d.id} />}
+      {!selesai && <FormRevisiDraf id={d.id} />}
 
       {/* Riwayat versi. */}
       {daftarRevisi.length > 0 && (
@@ -274,7 +272,7 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
 
       <Percakapan drafId={d.id} daftar={percakapan} saya={pengguna.nama} />
 
-      {!terkirim && (
+      {!selesai && (
         <div className="flex justify-end border-t border-garis pt-5">
           <TombolHapusDraf id={d.id} />
         </div>

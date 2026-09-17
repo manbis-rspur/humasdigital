@@ -181,7 +181,7 @@ export async function perbaikiKalenderLewatTelegram(
     .select("*")
     .eq("dibuat_oleh", penggunaId)
     .not("isi", "is", null)
-    .neq("status", "Terkirim")
+    .neq("status", "Selesai")
     .order("dibuat_pada", { ascending: false })
     .limit(1)
     .maybeSingle();
