@@ -47,25 +47,47 @@ export function bacaBarisKalender(markdown: string): BarisKalender[] {
   const tabel = pisahBlok(markdown).filter((b) => b.jenis === "tabel");
   if (tabel.length === 0) return [];
 
-  // Tabel terpanjang adalah kalendernya; yang pendek biasanya tabel
-  // sebaran tahap atau jam tayang terbaik.
-  const utama = tabel.reduce((a, b) => (b.isi.length > a.isi.length ? b : a));
-
-  const kolom = new Map<keyof Omit<BarisKalender, "nomor">, number>();
-
-  utama.kepala.forEach((nama, i) => {
-    const rapi = nama.toLowerCase();
-    for (const [kunci, kata] of PETA) {
-      if (kolom.has(kunci)) continue;
-      if (kata.some((k) => rapi.includes(k))) {
-        kolom.set(kunci, i);
-        break;
+  /**
+   * Kalendernya dikenali dari KOLOMNYA, bukan dari panjangnya.
+   *
+   * Dulu yang dipakai tabel terpanjang, dan itu keliru sejak
+   * konsep konten ikut berbentuk tabel: kalender satu baris kalah
+   * panjang dari tabel linimasa video di bawahnya, lalu seluruh
+   * pilihan "Buat konsep" hilang tanpa pesan apa pun. Kegagalan
+   * yang paling membingungkan justru yang tidak bersuara.
+   *
+   * Yang dicari: tabel pertama yang punya kolom topik DAN salah
+   * satu dari tanggal atau format. Tabel konsep tidak punya
+   * gabungan itu.
+   */
+  const petakan = (kepala: string[]) => {
+    const kolom = new Map<keyof Omit<BarisKalender, "nomor">, number>();
+    kepala.forEach((nama, i) => {
+      const rapi = nama.toLowerCase();
+      for (const [kunci, kata] of PETA) {
+        if (kolom.has(kunci)) continue;
+        if (kata.some((k) => rapi.includes(k))) {
+          kolom.set(kunci, i);
+          break;
+        }
       }
-    }
-  });
+    });
+    return kolom;
+  };
 
-  // Tanpa topik, sebuah baris tidak bisa dijadikan brief apa pun.
-  if (!kolom.has("topik")) return [];
+  let utama: (typeof tabel)[number] | null = null;
+  let kolom = new Map<keyof Omit<BarisKalender, "nomor">, number>();
+
+  for (const t of tabel) {
+    const peta = petakan(t.kepala);
+    if (peta.has("topik") && (peta.has("tanggal") || peta.has("format"))) {
+      utama = t;
+      kolom = peta;
+      break;
+    }
+  }
+
+  if (!utama) return [];
 
   const ambil = (baris: string[], kunci: keyof Omit<BarisKalender, "nomor">) => {
     const i = kolom.get(kunci);

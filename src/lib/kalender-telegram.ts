@@ -6,7 +6,7 @@ import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { mintaPerbaikan } from "@/lib/perbaikan";
-import { pisahBlok } from "@/lib/markdown-tabel";
+import { bacaBarisKalender } from "@/lib/kalender-baris";
 
 /**
  * Menyusun dan memperbaiki kalender konten lewat bot Telegram.
@@ -45,18 +45,16 @@ function petikJudul(markdown: string): string {
  * mana. Kalendernya sendiri dibuka dari PDF atau dari web.
  */
 export function ringkasKalender(markdown: string): string {
-  const tabel = pisahBlok(markdown).filter((b) => b.jenis === "tabel");
-  if (tabel.length === 0) return "Tersusun.";
-
-  // Tabel terpanjang adalah kalendernya; yang pendek biasanya
-  // tabel sebaran atau jam tayang.
-  const utama = tabel.reduce((a, b) => (b.isi.length > a.isi.length ? b : a));
+  // Memakai pengenalan yang sama dengan tombol "Buat konsep",
+  // supaya keduanya tidak pernah menghitung tabel yang berbeda.
+  const baris = bacaBarisKalender(markdown);
+  if (baris.length === 0) return "Tersusun.";
 
   const hitung = { TOFU: 0, MOFU: 0, BOFU: 0 };
-  for (const baris of utama.isi) {
-    const isi = baris.join(" ").toUpperCase();
+  for (const b of baris) {
+    const tahapnya = b.tahap.toUpperCase();
     for (const tahap of ["TOFU", "MOFU", "BOFU"] as const) {
-      if (isi.includes(tahap)) {
+      if (tahapnya.includes(tahap)) {
         hitung[tahap]++;
         break;
       }
@@ -67,7 +65,7 @@ export function ringkasKalender(markdown: string): string {
     ? ` · TOFU ${hitung.TOFU} · MOFU ${hitung.MOFU} · BOFU ${hitung.BOFU}`
     : "";
 
-  return `${utama.isi.length} butir konten${tahap}`;
+  return `${baris.length} butir konten${tahap}`;
 }
 
 async function bacaModul() {

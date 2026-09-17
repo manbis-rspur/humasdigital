@@ -214,17 +214,19 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
           Tahapan
         </h2>
 
-        {terkirim ? (
-          <p className="text-sm text-hijau">
+        {terkirim && (
+          <p className="text-sm text-tinta-2">
             Ditandai selesai
             {d.dikirim_pada && ` pada ${waktu.format(new Date(d.dikirim_pada))}`}.
+            Naskahnya terkunci — kembalikan ke tahap sebelumnya bila masih
+            perlu disunting atau dibuatkan konsep.
           </p>
-        ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <TombolStatus id={d.id} status={d.status} />
-            <TombolKembali id={d.id} status={d.status} />
-          </div>
         )}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <TombolStatus id={d.id} status={d.status} />
+          <TombolKembali id={d.id} status={d.status} />
+        </div>
       </section>
 
       {!terkirim && <FormRevisiDraf id={d.id} />}
