@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import Ikon from "@/components/ikon";
+import { NaskahTerlipat } from "@/components/naskah-terlipat";
 import { SuntingDokumen } from "@/components/sunting-dokumen";
 import { perbaikiNaskahDraf, simpanNaskahDraf } from "@/lib/draf-actions";
 import { KonsepKonten } from "./konsep";
@@ -200,8 +199,8 @@ export function NaskahDraf({
       )}
 
       <div className="overflow-x-auto">
-        <div className="dokumen" hidden={menyunting}>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{naskah}</ReactMarkdown>
+        <div hidden={menyunting}>
+          <NaskahTerlipat naskah={naskah} />
         </div>
 
         {!terkunci && (
