@@ -2,6 +2,7 @@ import "server-only";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { pisahBlok } from "@/lib/markdown-tabel";
+import { bacaUkuranGambar } from "@/lib/ukuran-gambar";
 
 /**
  * Mengubah dokumen Markdown jadi PDF.
@@ -54,12 +55,54 @@ function tanpaTandaJudul(baris: string): { teks: string; tingkat: number } {
 const KIRI = 10;
 const ATAS = 14;
 
-export function jadikanPdf(judul: string, markdown: string): Uint8Array {
+/** Kop surat yang dipasang di kepala halaman pertama. */
+export type Kop = { isi: Uint8Array; nama: string };
+
+export function jadikanPdf(
+  judul: string,
+  markdown: string,
+  kop?: Kop | null,
+): Uint8Array {
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const lebar = doc.internal.pageSize.getWidth() - KIRI * 2;
   const tinggi = doc.internal.pageSize.getHeight();
 
   let y = ATAS;
+
+  /**
+   * Kop dipasang di halaman pertama saja, seperti kebiasaan surat
+   * resmi. Halaman berikutnya cukup nama instansinya kecil di kaki
+   * halaman — kop yang berulang tiap halaman memakan ruang yang
+   * justru dibutuhkan tabel selebar ini.
+   */
+  let namaKaki = "";
+
+  if (kop) {
+    const ukuran = bacaUkuranGambar(kop.isi);
+    if (ukuran && ukuran.lebar > 0 && ukuran.tinggi > 0) {
+      const tinggiKop = (lebar * ukuran.tinggi) / ukuran.lebar;
+      // Kop yang terlalu tinggi menelan halaman pertama. Batasnya
+      // seperempat halaman; lebih dari itu diperkecil menurut
+      // perbandingan aslinya, bukan digepengkan.
+      const maks = tinggi / 4;
+      const pakaiTinggi = Math.min(tinggiKop, maks);
+      const pakaiLebar = (pakaiTinggi * ukuran.lebar) / ukuran.tinggi;
+
+      doc.addImage(
+        kop.isi,
+        ukuran.jenis,
+        KIRI + (lebar - pakaiLebar) / 2,
+        8,
+        pakaiLebar,
+        pakaiTinggi,
+      );
+
+      y = 8 + pakaiTinggi + 6;
+      doc.setDrawColor(200);
+      doc.line(KIRI, y - 3, KIRI + lebar, y - 3);
+      namaKaki = kop.nama;
+    }
+  }
 
   function halamanBaru(butuh: number) {
     if (y + butuh > tinggi - 12) {
@@ -140,6 +183,21 @@ export function jadikanPdf(judul: string, markdown: string): Uint8Array {
     }
 
     y += 2;
+  }
+
+  // Nama instansi di kaki tiap halaman sesudah yang pertama, dan
+  // nomor halaman di semuanya.
+  const jumlah = doc.getNumberOfPages();
+  for (let h = 1; h <= jumlah; h++) {
+    doc.setPage(h);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(130);
+
+    if (namaKaki && h > 1) {
+      doc.text(sederhanakan(namaKaki), KIRI, tinggi - 6);
+    }
+    doc.text(`${h} / ${jumlah}`, KIRI + lebar, tinggi - 6, { align: "right" });
   }
 
   return new Uint8Array(doc.output("arraybuffer"));

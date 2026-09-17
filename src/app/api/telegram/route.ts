@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { aman, kirimBerkasTelegram, kirimTelegram } from "@/lib/telegram";
 import { jadikanPdf } from "@/lib/markdown-pdf";
+import { ambilKop } from "@/lib/kop-data";
 import {
   ADMIN_SITUS,
   catatPerubahanJadwal,
@@ -92,7 +93,7 @@ async function balasHasil(chat: string, h: HasilKalender, kepala: string) {
   await kirimTelegram(chat, baris.join("\n"));
 
   try {
-    const pdf = jadikanPdf(h.judul, h.hasil ?? "");
+    const pdf = jadikanPdf(h.judul, h.hasil ?? "", await ambilKop());
     await kirimBerkasTelegram(chat, namaBerkas(h.judul), pdf, aman(h.judul));
   } catch (galat) {
     // Berkasnya gagal dibuat, tapi kalendernya sudah tersimpan.
@@ -134,7 +135,7 @@ async function kabariRekan(
 
   let pdf: Uint8Array | null = null;
   try {
-    pdf = jadikanPdf(h.judul, h.hasil ?? "");
+    pdf = jadikanPdf(h.judul, h.hasil ?? "", await ambilKop());
   } catch {
     // Tanpa berkas pun kabarnya tetap layak dikirim.
   }

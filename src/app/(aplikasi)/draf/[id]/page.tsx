@@ -13,6 +13,7 @@ import {
   TombolStatus,
 } from "./aksi-draf";
 import { NaskahDraf } from "./naskah";
+import type { KopSurat } from "@/lib/kop-surat";
 import { Percakapan, type Komentar } from "./percakapan";
 
 /**
@@ -74,7 +75,8 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
 
   const supabase = await createClient();
 
-  const [{ data: draf }, { data: revisi }, { data: komentar }] = await Promise.all([
+  const [{ data: draf }, { data: revisi }, { data: komentar }, { data: dataKop }] =
+    await Promise.all([
     supabase
       .from("draf")
       // Seluruh kolom: kolom isi baru ada setelah berkas SQL 41
@@ -92,6 +94,12 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
       .select("id, isi, pada, penulis:oleh(nama)")
       .eq("draf_id", nomor)
       .order("pada", { ascending: true }),
+    supabase
+      .from("kop_surat")
+      .select("id, nama, berkas_nama, bawaan, aktif")
+      .eq("aktif", true)
+      .order("bawaan", { ascending: false })
+      .order("nama"),
   ]);
 
   if (!draf) notFound();
@@ -145,7 +153,14 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
         <p className="max-w-2xl whitespace-pre-wrap text-tinta-2">{d.keterangan}</p>
       )}
 
-      {d.isi && <NaskahDraf id={d.id} isi={d.isi} terkunci={terkirim} />}
+      {d.isi && (
+        <NaskahDraf
+          id={d.id}
+          isi={d.isi}
+          terkunci={terkirim}
+          kop={(dataKop ?? []) as unknown as KopSurat[]}
+        />
+      )}
 
       {/* Berkas terbaru dan tautannya. */}
       <section className="flex flex-col gap-3 rounded-xl border border-garis bg-permukaan p-5 shadow-lembut">

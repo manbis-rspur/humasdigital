@@ -7,6 +7,8 @@ import Ikon from "@/components/ikon";
 import { SuntingDokumen } from "@/components/sunting-dokumen";
 import { perbaikiNaskahDraf, simpanNaskahDraf } from "@/lib/draf-actions";
 import { KonsepKonten } from "./konsep";
+import { UnduhPdf } from "./unduh-pdf";
+import type { KopSurat } from "@/lib/kop-surat";
 
 /**
  * Naskah draf yang datang langsung dari modul AI.
@@ -19,10 +21,12 @@ export function NaskahDraf({
   id,
   isi,
   terkunci,
+  kop,
 }: {
   id: number;
   isi: string;
   terkunci: boolean;
+  kop: KopSurat[];
 }) {
   const [naskah, setNaskah] = useState(isi);
   const [tersimpan, setTersimpan] = useState(isi);
@@ -124,6 +128,8 @@ export function NaskahDraf({
               {sedang ? "Menyimpan…" : "Simpan naskah"}
             </button>
           )}
+          <UnduhPdf drafId={id} kop={kop} />
+
           <button
             type="button"
             onClick={(e) =>
