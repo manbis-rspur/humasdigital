@@ -16,6 +16,7 @@ import {
   WidthType,
 } from "docx";
 import { bacaUkuranGambar } from "@/lib/ukuran-gambar";
+import { pisahBlok, type Blok } from "@/lib/markdown-tabel";
 import type { Kop } from "@/lib/markdown-pdf";
 
 /**
@@ -53,37 +54,32 @@ function potongTebal(baris: string, ukuran?: number): TextRun[] {
       new TextRun({
         text: tebal ? b.slice(2, -2) : b,
         bold: tebal,
-        ...(ukuran ? { size: ukuran } : {}),
+        font: HURUF,
+        size: ukuran ?? UKURAN,
       }),
     );
   }
 
   return hasil.length > 0
     ? hasil
-    : [new TextRun({ text: "", ...(ukuran ? { size: ukuran } : {}) })];
+    : [new TextRun({ text: "", font: HURUF, size: ukuran ?? UKURAN })];
 }
 
-/** Membaca satu baris tabel markdown jadi daftar sel. */
-function selTabel(baris: string): string[] {
-  return baris
-    .trim()
-    .replace(/^\||\|$/g, "")
-    .split("|")
-    .map((s) => s.trim());
-}
-
-function barisPemisah(baris: string) {
-  return /^\|?[\s:|-]+\|[\s:|-]*$/.test(baris) && baris.includes("-");
-}
-
-/** Ukuran huruf dalam setengah titik: 16 berarti 8 pt. */
-const HURUF_TABEL = 16;
+/**
+ * Huruf seluruh dokumen.
+ *
+ * Ukurannya dalam setengah titik — 24 berarti 12 pt. Tahoma
+ * dipilih sendiri oleh unitnya; ia ada di Windows maupun Mac,
+ * jadi berkasnya terbaca sama di kedua tempat.
+ */
+const HURUF = "Tahoma";
+const UKURAN = 24;
 
 const GARIS = { style: BorderStyle.SINGLE, size: 2, color: "D6D3CC" };
 
-function buatTabel(baris: string[]): Table {
-  const isi = baris.map(selTabel);
-  const lebarKolom = Math.max(...isi.map((b) => b.length));
+function buatTabel(blok: Extract<Blok, { jenis: "tabel" }>): Table {
+  const isi = [blok.kepala, ...blok.isi];
+  const lebarKolom = blok.kepala.length;
 
   /**
    * Lebar kolom ditentukan dari isinya, bukan dibagi rata.
@@ -137,10 +133,10 @@ function buatTabel(baris: string[]): Table {
                           new TextRun({
                             text: teks.replace(/\*\*/g, ""),
                             bold: true,
-                            size: HURUF_TABEL,
+                            size: UKURAN,
                           }),
                         ]
-                      : potongTebal(teks, HURUF_TABEL),
+                      : potongTebal(teks, UKURAN),
                 }),
               ],
             });
@@ -202,79 +198,99 @@ export async function jadikanWord(
   markdown: string,
   kop?: Kop | null,
 ): Promise<Buffer> {
-  const baris = markdown.replace(/\r\n/g, "\n").split("\n");
   const isi: (Paragraph | Table)[] = [
     new Paragraph({
-      children: [new TextRun({ text: judul, bold: true, size: 32 })],
+      children: [new TextRun({ text: judul, bold: true, size: 32, font: HURUF })],
       alignment: AlignmentType.CENTER,
       spacing: { after: 300 },
     }),
   ];
 
-  for (let i = 0; i < baris.length; i++) {
-    const b = baris[i];
-    const bersih = b.trim();
-
-    if (bersih === "") continue;
-
-    // Tabel: dikenali dari baris pemisah pada baris berikutnya.
-    if (bersih.startsWith("|") && barisPemisah(baris[i + 1] ?? "")) {
-      const kumpulan: string[] = [bersih];
-      i++; // lewati baris pemisah
-      while (i + 1 < baris.length && baris[i + 1].trim().startsWith("|")) {
-        kumpulan.push(baris[++i].trim());
-      }
-      isi.push(buatTabel(kumpulan));
+  /**
+   * Isinya disusun dari blok, memakai pengurai tabel yang sama
+   * dengan berkas PDF.
+   *
+   * Dulu berkas ini punya pembaca tabelnya sendiri, dan pembaca
+   * itu berhenti begitu ketemu baris yang tidak diawali garis
+   * tegak — padahal AI kadang memotong satu baris tabel jadi dua.
+   * Akibatnya separuh kalender hilang dari berkas Word sementara
+   * PDF-nya utuh, dan bedanya tidak kelihatan sampai ada yang
+   * membandingkan. Dua pembaca untuk satu bentuk yang sama memang
+   * selalu berakhir begitu.
+   */
+  for (const blok of pisahBlok(markdown)) {
+    if (blok.jenis === "tabel") {
+      isi.push(buatTabel(blok));
       isi.push(new Paragraph({ text: "", spacing: { after: 120 } }));
       continue;
     }
 
-    if (/^---+$/.test(bersih)) {
-      isi.push(new Paragraph({ text: "", border: { bottom: { style: "single", size: 6, color: "CCCCCC" } } }));
-      continue;
-    }
+    for (const b of blok.isi.split("\n")) {
+      const bersih = b.trim();
+      if (bersih === "") continue;
 
-    const judulCocok = bersih.match(/^(#{1,4})\s+(.*)$/);
-    if (judulCocok) {
-      const tingkat = judulCocok[1].length;
-      isi.push(
-        new Paragraph({
-          children: potongTebal(judulCocok[2]),
-          heading:
-            tingkat === 1
-              ? HeadingLevel.HEADING_1
-              : tingkat === 2
-                ? HeadingLevel.HEADING_2
-                : HeadingLevel.HEADING_3,
-          spacing: { before: 240, after: 120 },
-        }),
-      );
-      continue;
-    }
+      if (/^---+$/.test(bersih)) {
+        isi.push(
+          new Paragraph({
+            text: "",
+            border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: "CCCCCC" } },
+          }),
+        );
+        continue;
+      }
 
-    const poin = bersih.match(/^[-*+]\s+(.*)$/);
-    if (poin) {
-      isi.push(new Paragraph({ children: potongTebal(poin[1]), bullet: { level: 0 } }));
-      continue;
-    }
+      const judulCocok = bersih.match(/^(#{1,4})\s+(.*)$/);
+      if (judulCocok) {
+        const tingkat = judulCocok[1].length;
+        isi.push(
+          new Paragraph({
+            children: potongTebal(judulCocok[2]),
+            heading:
+              tingkat === 1
+                ? HeadingLevel.HEADING_1
+                : tingkat === 2
+                  ? HeadingLevel.HEADING_2
+                  : HeadingLevel.HEADING_3,
+            spacing: { before: 240, after: 120 },
+          }),
+        );
+        continue;
+      }
 
-    const bernomor = bersih.match(/^\d+[.)]\s+(.*)$/);
-    if (bernomor) {
-      isi.push(
-        new Paragraph({
-          children: potongTebal(bernomor[1]),
-          numbering: { reference: "daftar-bernomor", level: 0 },
-        }),
-      );
-      continue;
-    }
+      const poin = bersih.match(/^[-*+]\s+(.*)$/);
+      if (poin) {
+        isi.push(new Paragraph({ children: potongTebal(poin[1]), bullet: { level: 0 } }));
+        continue;
+      }
 
-    isi.push(new Paragraph({ children: potongTebal(bersih), spacing: { after: 120 } }));
+      const bernomor = bersih.match(/^\d+[.)]\s+(.*)$/);
+      if (bernomor) {
+        isi.push(
+          new Paragraph({
+            children: potongTebal(bernomor[1]),
+            numbering: { reference: "daftar-bernomor", level: 0 },
+          }),
+        );
+        continue;
+      }
+
+      isi.push(new Paragraph({ children: potongTebal(bersih), spacing: { after: 120 } }));
+    }
   }
 
   const kepala = kop ? kepalaKop(kop) : null;
 
   const dokumen = new Document({
+    // Huruf bawaan untuk seluruh dokumen, termasuk judul bertingkat
+    // yang tidak dibuat sendiri di sini.
+    styles: {
+      default: {
+        document: { run: { font: HURUF, size: UKURAN } },
+        heading1: { run: { font: HURUF, size: 32, bold: true } },
+        heading2: { run: { font: HURUF, size: 28, bold: true } },
+        heading3: { run: { font: HURUF, size: 26, bold: true } },
+      },
+    },
     numbering: {
       config: [
         {

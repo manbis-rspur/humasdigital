@@ -71,11 +71,6 @@ function tulisRata(rata: Rata): string {
   return "---";
 }
 
-/** Sebuah baris dianggap baris tabel bila mengandung garis tegak. */
-function mungkinTabel(baris: string): boolean {
-  return baris.includes("|");
-}
-
 export function pisahBlok(markdown: string): Blok[] {
   const baris = markdown.replace(/\r\n?/g, "\n").split("\n");
   const blok: Blok[] = [];
@@ -90,7 +85,7 @@ export function pisahBlok(markdown: string): Blok[] {
 
   for (let i = 0; i < baris.length; i++) {
     const kepalaTabel =
-      mungkinTabel(baris[i]) &&
+      baris[i].includes("|") &&
       i + 1 < baris.length &&
       barisPemisah(baris[i + 1]) &&
       !barisPemisah(baris[i]);
@@ -107,7 +102,37 @@ export function pisahBlok(markdown: string): Blok[] {
     let j = i + 2;
     for (; j < baris.length; j++) {
       const b = baris[j];
-      if (b.trim() === "" || !mungkinTabel(b)) break;
+
+      // Baris kosong mengakhiri tabel.
+      if (b.trim() === "") break;
+
+      /**
+       * Baris yang tidak diawali garis tegak adalah SAMBUNGAN
+       * baris sebelumnya, bukan akhir tabel.
+       *
+       * AI kadang memotong satu baris tabel jadi dua baris —
+       * bagian belakangnya jatuh ke bawah tanpa garis tegak di
+       * depannya. Dianggap akhir tabel, sisa kalendernya hilang
+       * tanpa pesan apa pun; dianggap baris baru, isinya bergeser
+       * satu kolom. Disambung ke kotak terakhir barulah ia utuh.
+       */
+      if (!b.trim().startsWith("|")) {
+        const terakhir = isi[isi.length - 1];
+        if (!terakhir) break;
+
+        const sambungan = pisahBaris(b);
+        terakhir[terakhir.length - 1] =
+          `${terakhir[terakhir.length - 1]} ${sambungan[0]}`.trim();
+
+        // Kotak selebihnya mengisi kolom yang masih kosong di
+        // ujung kanan.
+        for (let k = 1; k < sambungan.length; k++) {
+          const kosong = terakhir.findIndex((isi) => isi === "");
+          if (kosong === -1) break;
+          terakhir[kosong] = sambungan[k];
+        }
+        continue;
+      }
 
       const kotak = pisahBaris(b);
       // Baris pendek dilengkapi, baris kepanjangan dipotong —
