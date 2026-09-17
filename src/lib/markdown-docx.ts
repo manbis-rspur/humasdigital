@@ -1,10 +1,12 @@
 import "server-only";
 import {
   AlignmentType,
+  BorderStyle,
   Document,
   Header,
   HeadingLevel,
   ImageRun,
+  PageOrientation,
   Packer,
   Paragraph,
   Table,
@@ -31,21 +33,34 @@ import type { Kop } from "@/lib/markdown-pdf";
  * yang benar-benar dihasilkan modul-modul ini.
  */
 
-/** Memecah satu baris jadi potongan tebal dan biasa. */
-function potongTebal(baris: string): TextRun[] {
+/**
+ * Memecah satu baris jadi potongan tebal dan biasa.
+ *
+ * Ukurannya dititipkan dari luar, bukan disetel belakangan:
+ * TextRun itu kelas, dan menyalinnya dengan sebaran objek
+ * menghasilkan isi dalamannya — bukan pilihan yang dipakai
+ * membuatnya. Hasilnya berkas Word yang terbentuk tapi tulisannya
+ * hilang.
+ */
+function potongTebal(baris: string, ukuran?: number): TextRun[] {
   const hasil: TextRun[] = [];
   const bagian = baris.split(/(\*\*[^*]+\*\*)/g);
 
   for (const b of bagian) {
     if (!b) continue;
-    if (b.startsWith("**") && b.endsWith("**")) {
-      hasil.push(new TextRun({ text: b.slice(2, -2), bold: true }));
-    } else {
-      hasil.push(new TextRun(b));
-    }
+    const tebal = b.startsWith("**") && b.endsWith("**");
+    hasil.push(
+      new TextRun({
+        text: tebal ? b.slice(2, -2) : b,
+        bold: tebal,
+        ...(ukuran ? { size: ukuran } : {}),
+      }),
+    );
   }
 
-  return hasil.length > 0 ? hasil : [new TextRun("")];
+  return hasil.length > 0
+    ? hasil
+    : [new TextRun({ text: "", ...(ukuran ? { size: ukuran } : {}) })];
 }
 
 /** Membaca satu baris tabel markdown jadi daftar sel. */
@@ -61,26 +76,71 @@ function barisPemisah(baris: string) {
   return /^\|?[\s:|-]+\|[\s:|-]*$/.test(baris) && baris.includes("-");
 }
 
+/** Ukuran huruf dalam setengah titik: 16 berarti 8 pt. */
+const HURUF_TABEL = 16;
+
+const GARIS = { style: BorderStyle.SINGLE, size: 2, color: "D6D3CC" };
+
 function buatTabel(baris: string[]): Table {
   const isi = baris.map(selTabel);
   const lebarKolom = Math.max(...isi.map((b) => b.length));
 
+  /**
+   * Lebar kolom ditentukan dari isinya, bukan dibagi rata.
+   *
+   * Kolom "Detik" dan "Halaman" cuma berisi beberapa huruf,
+   * sedangkan "Ide Visual" berisi kalimat. Dibagi rata, yang
+   * pendek jadi lapang dan yang panjang pecah jadi tujuh baris —
+   * dan tabel seperti itu justru lebih sulit dibaca daripada
+   * paragraf.
+   */
+  const panjangKolom = Array.from({ length: lebarKolom }, (_, i) => {
+    const semua = isi.map((sel) => (sel[i] ?? "").length);
+    // Akar pangkat dua meredam bedanya: kolom sepuluh kali lebih
+    // panjang tidak layak jadi sepuluh kali lebih lebar.
+    return Math.sqrt(Math.max(...semua, 4));
+  });
+
+  const jumlah = panjangKolom.reduce((a, b) => a + b, 0);
+  const lebar = panjangKolom.map((p) => Math.max(5, Math.round((p / jumlah) * 100)));
+
   return new Table({
     width: { size: 100, type: WidthType.PERCENTAGE },
+    columnWidths: lebar,
+    borders: {
+      top: GARIS,
+      bottom: GARIS,
+      left: GARIS,
+      right: GARIS,
+      insideHorizontal: GARIS,
+      insideVertical: GARIS,
+    },
     rows: isi.map(
       (sel, nomor) =>
         new TableRow({
+          // Kepala tabel diulang di tiap halaman. Tabel panjang
+          // yang terpotong tanpa kepala membuat yang membaca
+          // halaman kedua menebak-nebak isi tiap kolom.
           tableHeader: nomor === 0,
           children: Array.from({ length: lebarKolom }, (_, i) => {
             const teks = sel[i] ?? "";
             return new TableCell({
-              shading: nomor === 0 ? { fill: "EFEFEF" } : undefined,
+              width: { size: lebar[i], type: WidthType.PERCENTAGE },
+              shading: nomor === 0 ? { fill: "EFEDE8" } : undefined,
+              margins: { top: 60, bottom: 60, left: 90, right: 90 },
               children: [
                 new Paragraph({
+                  spacing: { before: 0, after: 0 },
                   children:
                     nomor === 0
-                      ? [new TextRun({ text: teks.replace(/\*\*/g, ""), bold: true })]
-                      : potongTebal(teks),
+                      ? [
+                          new TextRun({
+                            text: teks.replace(/\*\*/g, ""),
+                            bold: true,
+                            size: HURUF_TABEL,
+                          }),
+                        ]
+                      : potongTebal(teks, HURUF_TABEL),
                 }),
               ],
             });
@@ -106,9 +166,9 @@ function kepalaKop(kop: Kop): Header | null {
   const ukuran = bacaUkuranGambar(kop.isi);
   if (!ukuran || ukuran.lebar === 0 || ukuran.tinggi === 0) return null;
 
-  // Lebar isi halaman A4 tegak dengan tepi baku, dalam titik.
-  const LEBAR_ISI = 450;
-  const TINGGI_MAKS = 110;
+  // Lebar isi halaman A4 MELINTANG dengan tepi rapat, dalam titik.
+  const LEBAR_ISI = 770;
+  const TINGGI_MAKS = 90;
 
   let lebar = LEBAR_ISI;
   let tinggi = (LEBAR_ISI * ukuran.tinggi) / ukuran.lebar;
@@ -225,13 +285,31 @@ export async function jadikanWord(
     },
     sections: [
       {
+        /**
+         * Melintang, menyamai berkas PDF-nya.
+         *
+         * Seluruh isi konsep sekarang berbentuk tabel, dan tabel
+         * sembilan kolom di kertas tegak membuat tiap kotak pecah
+         * jadi lima baris. Itulah sebabnya berkas Word-nya terasa
+         * berantakan.
+         *
+         * Tepinya dirapatkan supaya lebarnya terpakai untuk isi,
+         * bukan untuk ruang kosong.
+         */
+        properties: {
+          page: {
+            size: { orientation: PageOrientation.LANDSCAPE },
+            margin: { top: 720, bottom: 720, left: 720, right: 720 },
+          },
+          // Kop hanya di halaman pertama, seperti kebiasaan surat
+          // resmi dan seperti berkas PDF-nya.
+          ...(kepala ? { titlePage: true } : {}),
+        },
         children: isi,
         // titlePage membuat header di bawah hanya berlaku pada
         // halaman pertama; tanpa header default, halaman
         // berikutnya bersih.
-        ...(kepala
-          ? { properties: { titlePage: true }, headers: { first: kepala } }
-          : {}),
+        ...(kepala ? { headers: { first: kepala } } : {}),
       },
     ],
   });
