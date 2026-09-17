@@ -407,26 +407,6 @@ export async function tambahKomentar(_s: Hasil, formData: FormData): Promise<Has
   return { pesan: null, berhasil: null };
 }
 
-/** Mengirim draf ke Arsip Publikasi di Dashboard Manajemen Bisnis. */
-export async function kirimDraf(formData: FormData): Promise<Balasan> {
-  const { pengguna, galat } = await pastikanBerhak();
-  if (!pengguna) return { ok: false, pesan: galat ?? "Tidak berhak." };
-
-  const id = Number(formData.get("id"));
-  if (!id) return { ok: false, pesan: "Draf tidak dikenali." };
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("kirim_draf_ke_arsip", { p_draf_id: id });
-
-  if (error) return { ok: false, pesan: `Gagal dikirim: ${error.message}` };
-
-  segarkan(id);
-  return {
-    ok: true,
-    pesan: "Terkirim ke Arsip Publikasi. Koordinator bisa membacanya sekarang.",
-  };
-}
-
 /** Menghapus draf yang salah tulis, beserta seluruh berkasnya. */
 export async function hapusDraf(formData: FormData) {
   const { pengguna } = await pastikanBerhak();

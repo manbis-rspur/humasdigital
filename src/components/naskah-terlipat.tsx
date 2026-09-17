@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Ikon from "@/components/ikon";
 import { pisahBagian } from "@/lib/konsep-teks";
+import type { KopSurat } from "@/lib/kop-surat";
 
 /**
  * Menampilkan naskah draf dengan konsep-konsepnya bisa dilipat.
@@ -19,7 +20,16 @@ import { pisahBagian } from "@/lib/konsep-teks";
  * adanya; kalau bagian yang terlipat dibuang, yang tersalin cuma
  * separuh dokumen tanpa ada yang menyadarinya.
  */
-export function NaskahTerlipat({ naskah }: { naskah: string }) {
+export function NaskahTerlipat({
+  naskah,
+  drafId,
+  kop = [],
+}: {
+  naskah: string;
+  drafId: number;
+  kop?: KopSurat[];
+}) {
+  const kopBawaan = kop.find((k) => k.bawaan) ?? kop[0];
   const bagian = pisahBagian(naskah);
   const konsep = bagian.filter((b) => b.judul !== "");
 
@@ -44,6 +54,9 @@ export function NaskahTerlipat({ naskah }: { naskah: string }) {
   }
 
   const semuaTerbuka = terbuka.size === konsep.length;
+
+  const gayaUnduh =
+    "inline-flex items-center gap-1.5 rounded border border-garis px-2.5 py-1 text-xs font-medium text-tinta-2 hover:bg-permukaan-2";
 
   return (
     <div className="dokumen flex flex-col gap-3">
@@ -99,6 +112,45 @@ export function NaskahTerlipat({ naskah }: { naskah: string }) {
             </button>
 
             <div hidden={!buka} className="border-t border-garis px-4 py-3">
+              {/* Unduhan per konsep, bukan seluruh draf. Yang
+                  diserahkan ke desainer cuma satu konten; seluruh
+                  kalender sebulan justru membuat ia harus mencari
+                  bagiannya sendiri. */}
+              <div className="mb-3 flex flex-wrap gap-2 border-b border-garis pb-3">
+                <a
+                  href={`/draf/${drafId}/bagian?bentuk=pdf&kop=${
+                    kopBawaan ? kopBawaan.id : "tanpa"
+                  }&judul=${encodeURIComponent(b.judul)}`}
+                  className={gayaUnduh}
+                >
+                  <Ikon nama="unduh" ukuran={13} />
+                  PDF
+                  {kopBawaan && (
+                    <span className="font-normal text-tinta-3">
+                      kop {kopBawaan.nama}
+                    </span>
+                  )}
+                </a>
+
+                {kopBawaan && (
+                  <a
+                    href={`/draf/${drafId}/bagian?bentuk=pdf&kop=tanpa&judul=${encodeURIComponent(b.judul)}`}
+                    className={gayaUnduh}
+                  >
+                    <Ikon nama="unduh" ukuran={13} />
+                    PDF tanpa kop
+                  </a>
+                )}
+
+                <a
+                  href={`/draf/${drafId}/bagian?bentuk=word&judul=${encodeURIComponent(b.judul)}`}
+                  className={gayaUnduh}
+                >
+                  <Ikon nama="unduh" ukuran={13} />
+                  Word
+                </a>
+              </div>
+
               <ReactMarkdown remarkPlugins={[remarkGfm]}>{b.isi}</ReactMarkdown>
             </div>
           </section>

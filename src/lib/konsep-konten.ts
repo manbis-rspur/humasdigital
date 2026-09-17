@@ -4,6 +4,7 @@ import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { susunPerintah } from "@/lib/modul-ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
+import { daftarSumberUntukAI } from "@/lib/sumber-data";
 import { tanpaPagar } from "@/lib/perbaikan";
 import { kunciNama } from "@/lib/jadwal-ubah";
 import type { BarisKalender } from "@/lib/kalender-baris";
@@ -92,6 +93,11 @@ export async function susunKonsepKonten(
     const dokter = await daftarDokterUntukAI(db);
     if (dokter) perintah.push({ text: dokter });
   }
+
+  // Selalu disertakan, termasuk saat daftarnya kosong — perintah
+  // tanpa daftar membuat AI kembali menebak dari ingatannya, dan
+  // justru itu yang dihindari.
+  perintah.push({ text: await daftarSumberUntukAI(db) });
 
   try {
     const hasil = await susunDenganAI(perintah, modul.instruksi_sistem, 0.8);

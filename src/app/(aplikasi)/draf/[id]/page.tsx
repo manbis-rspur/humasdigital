@@ -9,7 +9,6 @@ import {
   FormRevisiDraf,
   TombolHapusDraf,
   TombolKembali,
-  TombolKirimArsip,
   TombolStatus,
 } from "./aksi-draf";
 import { NaskahDraf } from "./naskah";
@@ -217,18 +216,14 @@ export default async function HalamanDraf({ params }: PageProps<"/draf/[id]">) {
 
         {terkirim ? (
           <p className="text-sm text-hijau">
-            Sudah dikirim ke Arsip Publikasi
+            Ditandai selesai
             {d.dikirim_pada && ` pada ${waktu.format(new Date(d.dikirim_pada))}`}.
-            Tinjauan Koordinator akan muncul di lonceng.
           </p>
         ) : (
-          <>
-            <div className="flex flex-wrap items-center gap-3">
-              <TombolStatus id={d.id} status={d.status} />
-              <TombolKembali id={d.id} status={d.status} />
-            </div>
-            <TombolKirimArsip id={d.id} siap={d.status === "Siap kirim"} />
-          </>
+          <div className="flex flex-wrap items-center gap-3">
+            <TombolStatus id={d.id} status={d.status} />
+            <TombolKembali id={d.id} status={d.status} />
+          </div>
         )}
       </section>
 

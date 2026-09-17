@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import Ikon from "@/components/ikon";
 import {
   hapusDraf,
-  kirimDraf,
   siapkanBerkasDraf,
   tambahRevisiDraf,
   ubahStatusDraf,
@@ -150,47 +149,6 @@ export function FormRevisiDraf({ id }: { id: number }) {
         </span>
       </div>
     </form>
-  );
-}
-
-/** Mengirim draf ke Arsip Publikasi di Dashboard Manajemen Bisnis. */
-export function TombolKirimArsip({ id, siap }: { id: number; siap: boolean }) {
-  const [hasil, setHasil] = useState<{ ok: boolean; pesan: string } | null>(null);
-  const [sedang, mulai] = useTransition();
-
-  return (
-    <div className="flex flex-col gap-2">
-      <form
-        action={(formData) =>
-          mulai(async () => {
-            setHasil(await kirimDraf(formData));
-          })
-        }
-      >
-        <input type="hidden" name="id" value={id} />
-        <button
-          type="submit"
-          disabled={sedang || !siap}
-          className="flex items-center gap-2 rounded-lg bg-hijau px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-        >
-          <Ikon nama="surat" ukuran={16} />
-          {sedang ? "Mengirim…" : "Kirim ke Arsip Manbis"}
-        </button>
-      </form>
-
-      {!siap && (
-        <p className="text-xs text-tinta-3">
-          Tandai &ldquo;Siap kirim&rdquo; lebih dulu. Tahapan itu yang membedakan
-          draf yang sudah disepakati berdua dari yang masih digarap sendiri.
-        </p>
-      )}
-
-      {hasil && (
-        <p className={`text-sm ${hasil.ok ? "text-hijau" : "text-merah"}`}>
-          {hasil.pesan}
-        </p>
-      )}
-    </div>
   );
 }
 

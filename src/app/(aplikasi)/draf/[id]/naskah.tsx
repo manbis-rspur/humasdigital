@@ -200,7 +200,7 @@ export function NaskahDraf({
 
       <div className="overflow-x-auto">
         <div hidden={menyunting}>
-          <NaskahTerlipat naskah={naskah} />
+          <NaskahTerlipat naskah={naskah} drafId={id} kop={kop} />
         </div>
 
         {!terkunci && (

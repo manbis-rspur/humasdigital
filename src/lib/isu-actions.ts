@@ -151,3 +151,61 @@ export async function hapusBahan(formData: FormData) {
 
   segarkan();
 }
+
+
+/** Menambah atau memperbaiki satu sumber rujukan. */
+export async function simpanSumber(_s: Hasil, formData: FormData): Promise<Hasil> {
+  const { pengguna, galat } = await pastikanBerhak();
+  if (!pengguna) return { pesan: galat, berhasil: null };
+
+  const lembaga = isi(formData, "lembaga");
+  const tautan = isi(formData, "tautan");
+
+  if (lembaga === "") return { pesan: "Sebutkan lembaganya.", berhasil: null };
+  if (!tautan.startsWith("https://")) {
+    return { pesan: "Tautannya harus dimulai dengan https://", berhasil: null };
+  }
+
+  const isian = {
+    lembaga,
+    judul: isiAtauNull(formData, "judul"),
+    tautan,
+    topik: isiAtauNull(formData, "topik"),
+    catatan: isiAtauNull(formData, "catatan"),
+    aktif: formData.get("aktif") !== null,
+  };
+
+  const id = Number(formData.get("id"));
+  const supabase = await createClient();
+
+  const { error } = id
+    ? await supabase.from("sumber_rujukan").update(isian).eq("id", id)
+    : await supabase
+        .from("sumber_rujukan")
+        .insert({ ...isian, ditambah_oleh: pengguna.id });
+
+  if (error) {
+    return {
+      pesan:
+        error.code === "23505"
+          ? "Tautan itu sudah terdaftar."
+          : `Gagal disimpan: ${error.message}`,
+      berhasil: null,
+    };
+  }
+
+  segarkan();
+  return { pesan: null, berhasil: `Sumber dari ${lembaga} tersimpan.` };
+}
+
+export async function hapusSumber(formData: FormData) {
+  if ((await pastikanBerhak()).galat) return;
+
+  const id = Number(formData.get("id"));
+  if (!id) return;
+
+  const supabase = await createClient();
+  await supabase.from("sumber_rujukan").delete().eq("id", id);
+
+  segarkan();
+}

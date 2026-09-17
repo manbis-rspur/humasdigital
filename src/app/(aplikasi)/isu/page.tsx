@@ -10,7 +10,10 @@ import {
   type HariKesehatan,
   type IsuRamai,
 } from "@/lib/isu";
+import { hapusSumber } from "@/lib/isu-actions";
+import type { Sumber } from "@/lib/sumber";
 import { BarisBahan } from "./baris";
+import { SumberBaru } from "./form-sumber";
 import { HariBaru, IsuBaru } from "./formulir";
 
 /**
@@ -28,7 +31,7 @@ export default async function HalamanIsu() {
 
   const supabase = await createClient();
 
-  const [{ data: hari }, { data: isu }, usulan] = await Promise.all([
+  const [{ data: hari }, { data: isu }, { data: sumber }, usulan] = await Promise.all([
     supabase
       .from("hari_kesehatan")
       .select("id, nama, bulan, tanggal, lingkup, kaitan, sudut, aktif")
@@ -38,11 +41,16 @@ export default async function HalamanIsu() {
       .from("isu_ramai")
       .select("id, judul, ringkasan, sudut, kaitan, sumber, mulai, sampai, aktif")
       .order("mulai", { ascending: false }),
+    supabase
+      .from("sumber_rujukan")
+      .select("id, lembaga, judul, tautan, topik, catatan, aktif")
+      .order("lembaga"),
     bacaUsulan(),
   ]);
 
   const daftarHari = (hari ?? []) as unknown as HariKesehatan[];
   const daftarIsu = (isu ?? []) as unknown as IsuRamai[];
+  const daftarSumber = (sumber ?? []) as unknown as Sumber[];
   const terdekat = usulan.slice(0, 6);
 
   const perBulan = NAMA_BULAN.slice(1).map((nama, i) => ({
@@ -118,6 +126,70 @@ export default async function HalamanIsu() {
                   .filter(Boolean)
                   .join(" · ")}
               />
+            ))}
+          </ul>
+        )}
+      </section>
+
+      {/* ---------- Sumber rujukan ---------- */}
+      <section className="flex flex-col gap-4">
+        <div>
+          <h2 className="text-lg font-medium">Sumber rujukan</h2>
+          <p className="mt-1 max-w-2xl text-sm text-tinta-2">
+            Dipakai AI untuk mengisi tabel Sumber pada tiap konsep konten. AI
+            hanya boleh menyalin dari daftar ini — klaim yang tidak tercakup
+            ditandai &ldquo;belum terdaftar&rdquo;, bukan ditambal sumber
+            karangan. Isinya ditempel sendiri dari halaman yang memang sudah
+            dibuka.
+          </p>
+        </div>
+
+        <SumberBaru />
+
+        {daftarSumber.length === 0 ? (
+          <p className="rounded-xl border-l-4 border-oker bg-[#f6efe2] px-4 py-3 text-sm">
+            Belum ada sumber terdaftar. Selama kosong, tiap konsep akan menulis
+            &ldquo;belum terdaftar&rdquo; di seluruh baris tabel sumbernya.
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-1.5">
+            {daftarSumber.map((s) => (
+              <li
+                key={s.id}
+                className={`flex flex-wrap items-center gap-x-4 gap-y-1 rounded-xl border border-garis bg-permukaan px-4 py-2.5 shadow-lembut ${
+                  s.aktif ? "" : "opacity-60"
+                }`}
+              >
+                <span className="mr-auto min-w-0">
+                  <span className="font-medium">{s.lembaga}</span>
+                  {s.judul && (
+                    <span className="text-tinta-2"> — {s.judul}</span>
+                  )}
+                  <a
+                    href={s.tautan}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block truncate text-xs text-hijau hover:underline"
+                  >
+                    {s.tautan}
+                  </a>
+                  {s.topik && (
+                    <span className="block text-xs text-tinta-3">{s.topik}</span>
+                  )}
+                </span>
+
+                <form action={hapusSumber}>
+                  <input type="hidden" name="id" value={s.id} />
+                  <button
+                    type="submit"
+                    aria-label="Hapus"
+                    title="Hapus"
+                    className="text-merah hover:opacity-70"
+                  >
+                    <Ikon nama="hapus" ukuran={14} />
+                  </button>
+                </form>
+              </li>
             ))}
           </ul>
         )}
