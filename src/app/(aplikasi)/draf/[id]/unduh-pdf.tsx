@@ -42,12 +42,23 @@ export function UnduhPdf({ drafId, kop }: { drafId: number; kop: KopSurat[] }) {
         </label>
       )}
 
+      {/* Judul dikosongkan: kalendernya saja, tanpa konsep yang
+          menempel di bawahnya. Konsep punya unduhannya sendiri di
+          panel masing-masing. */}
       <a
-        href={`/draf/${drafId}/pdf?kop=${pilih}`}
+        href={`/draf/${drafId}/bagian?bentuk=pdf&judul=&kop=${pilih}`}
         className={`${kecil} inline-flex items-center gap-1.5`}
       >
         <Ikon nama="unduh" ukuran={14} />
-        Unduh PDF
+        Kalender PDF
+      </a>
+
+      <a
+        href={`/draf/${drafId}/bagian?bentuk=word&judul=&kop=${pilih}`}
+        className={`${kecil} inline-flex items-center gap-1.5`}
+      >
+        <Ikon nama="unduh" ukuran={14} />
+        Kalender Word
       </a>
 
       {/* Selama belum ada kop, ini tombol penuh — bukan tulisan

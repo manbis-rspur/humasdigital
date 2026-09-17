@@ -6,12 +6,17 @@ import { ambilKop } from "@/lib/kop-data";
 import { pisahBagian } from "@/lib/konsep-teks";
 
 /**
- * Mengunduh SATU konsep dari sebuah draf, sebagai PDF atau Word.
+ * Mengunduh SATU bagian dari sebuah draf, sebagai PDF atau Word.
  *
- * Per konsep, bukan seluruh draf. Yang diserahkan ke desainer atau
- * videografer cuma satu konten; mengirimkan seluruh kalender
- * sebulan berikut lima konsep lain justru membuat yang bersangkutan
- * harus mencari bagiannya sendiri.
+ * Isian "judul" menentukan bagiannya. Dikosongkan berarti
+ * kalendernya saja — tanpa konsep-konsep yang menempel di
+ * bawahnya.
+ *
+ * Kenapa dipisah begitu: konsep punya unduhannya sendiri, dan yang
+ * diserahkan ke desainer cuma satu konten. Kalender yang membawa
+ * serta lima konsep membuat penerimanya harus mencari bagiannya
+ * sendiri — dan yang diserahkan ke rapat manajemen justru
+ * sebaliknya, kalendernya saja tanpa naskah produksi.
  *
  * Izinnya dijaga aturan tabel: kueri di bawah memakai sesi orang
  * yang meminta, dan draf yang bukan haknya tidak terbaca sama
@@ -37,10 +42,24 @@ export async function GET(
     return new NextResponse("Draf ini tidak punya naskah teks.", { status: 404 });
   }
 
-  const bagian = pisahBagian(data.isi as string).find((b) => b.judul === judul);
-  if (!bagian) {
+  const semua = pisahBagian(data.isi as string);
+
+  // Judul kosong: kalendernya saja. Bagian tanpa judul memang
+  // hanya kalendernya — konsep selalu ditempel berjudul.
+  const isiBagian =
+    judul === ""
+      ? semua
+          .filter((b) => b.judul === "")
+          .map((b) => b.isi)
+          .join("\n\n")
+          .trim()
+      : (semua.find((b) => b.judul === judul)?.isi ?? null);
+
+  if (!isiBagian) {
     return new NextResponse("Bagian itu tidak ada di draf ini.", { status: 404 });
   }
+
+  const bagian = { isi: isiBagian };
 
   const nama =
     (judul || (data.judul as string))
