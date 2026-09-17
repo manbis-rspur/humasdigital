@@ -38,6 +38,31 @@ export type Bagian =
   | { text: string }
   | { inlineData: { mimeType: string; data: string } };
 
+/** Satu halaman yang benar-benar dibuka Gemini saat mencari. */
+export type SumberTemuan = { judul: string; tautan: string };
+
+export type HasilBerSumber = { teks: string; sumber: SumberTemuan[] };
+
+/**
+ * Menyusun sambil MENCARI di web.
+ *
+ * Bedanya dengan susunDenganAI biasa: alamat yang dikembalikan
+ * bukan dari ingatan model, melainkan dari halaman yang
+ * benar-benar dibuka Gemini saat menjawab. Itulah satu-satunya
+ * cara sumbernya bisa disebut akurat.
+ *
+ * Perlu penagihan Gemini aktif. Tanpa itu Google menolak dengan
+ * kuota habis — dan penolakan itu dilempar apa adanya supaya
+ * pemanggilnya bisa mundur ke cara biasa, bukan gagal seluruhnya.
+ */
+export async function susunSambilMencari(
+  perintah: Bagian[],
+  instruksiSistem: string,
+  suhu = 0.7,
+): Promise<HasilBerSumber> {
+  return panggilGemini(perintah, instruksiSistem, suhu, false, true) as Promise<HasilBerSumber>;
+}
+
 export async function susunDenganAI(
   perintah: string | Bagian[],
   instruksiSistem: string,
@@ -47,7 +72,7 @@ export async function susunDenganAI(
   // — foto ruangan, panduan merek, kerangka acuan acara. Bentuk lama
   // tetap diterima supaya modul yang sudah ada tidak perlu diubah.
   const bagian = typeof perintah === "string" ? [{ text: perintah }] : perintah;
-  return panggilGemini(bagian, instruksiSistem, suhu, false);
+  return panggilGemini(bagian, instruksiSistem, suhu, false) as Promise<string>;
 }
 
 /**
@@ -62,7 +87,7 @@ export async function bacaDenganAI(
   bagian: Bagian[],
   instruksiSistem: string,
 ): Promise<string> {
-  return panggilGemini(bagian, instruksiSistem, 0, true);
+  return panggilGemini(bagian, instruksiSistem, 0, true) as Promise<string>;
 }
 
 async function panggilGemini(
@@ -70,7 +95,8 @@ async function panggilGemini(
   instruksiSistem: string,
   suhu: number,
   jsonSaja: boolean,
-): Promise<string> {
+  mencari = false,
+): Promise<string | HasilBerSumber> {
   const kunci = process.env.GEMINI_API_KEY;
 
   if (!kunci) {
@@ -93,9 +119,13 @@ async function panggilGemini(
           body: JSON.stringify({
             contents: [{ parts: bagian }],
             systemInstruction: { parts: [{ text: instruksiSistem }] },
+            ...(mencari ? { tools: [{ google_search: {} }] } : {}),
             generationConfig: {
               temperature: suhu,
-              ...(jsonSaja ? { responseMimeType: "application/json" } : {}),
+              // Pencarian dan jawaban terkunci-JSON tidak bisa
+              // dipakai bersamaan; yang mencari memang menjawab
+              // dengan tulisan biasa.
+              ...(jsonSaja && !mencari ? { responseMimeType: "application/json" } : {}),
             },
           }),
         });
@@ -121,7 +151,24 @@ async function panggilGemini(
             ?.map((p: { text?: string }) => p.text ?? "")
             .join("") ?? "";
 
-        if (teks.trim()) return teks;
+        if (teks.trim()) {
+          if (!mencari) return teks;
+
+          // Alamatnya diambil dari keterangan pencarian Gemini,
+          // bukan dari tulisan yang ia hasilkan. Yang ia tulis
+          // bisa karangan; yang ada di sini benar-benar dibuka.
+          const potongan =
+            data?.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+
+          const sumber: SumberTemuan[] = [];
+          for (const p of potongan as { web?: { uri?: string; title?: string } }[]) {
+            const tautan = p.web?.uri;
+            if (!tautan || sumber.some((x) => x.tautan === tautan)) continue;
+            sumber.push({ judul: p.web?.title ?? tautan, tautan });
+          }
+
+          return { teks, sumber };
+        }
 
         // Jawaban kosong biasanya berarti permintaannya tertahan
         // penyaring keamanan Gemini, bukan gangguan jaringan.
