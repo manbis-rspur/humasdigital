@@ -38,6 +38,9 @@ const MENU_DOKTER: ButirMenu = {
 /** Hari kesehatan dan isu yang sedang ramai, bahan usulan tema. */
 const MENU_ISU: ButirMenu = { href: "/isu", label: "Bahan Tema", ikon: "waktu" };
 
+/** Kop surat untuk berkas PDF yang diunduh dari draf. */
+const MENU_KOP: ButirMenu = { href: "/kop-surat", label: "Kop Surat", ikon: "surat" };
+
 export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
   const pengguna = await penggunaBerhak();
   const identitas = await bacaIdentitas();
@@ -46,7 +49,9 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
     : [...MENU];
 
   if (await bolehMcu()) menu.splice(1, 0, MENU_MCU);
-  if (await punyaIzin("humas")) menu.splice(1, 0, MENU_DRAF, MENU_DOKTER, MENU_ISU);
+  if (await punyaIzin("humas")) {
+    menu.splice(1, 0, MENU_DRAF, MENU_DOKTER, MENU_ISU, MENU_KOP);
+  }
 
   const lonceng = await bacaLonceng();
 

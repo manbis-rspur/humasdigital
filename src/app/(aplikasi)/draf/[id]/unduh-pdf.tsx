@@ -50,9 +50,29 @@ export function UnduhPdf({ drafId, kop }: { drafId: number; kop: KopSurat[] }) {
         Unduh PDF
       </a>
 
-      <Link prefetch={false} href="/kop-surat" className="text-xs text-tinta-3 hover:text-tinta">
-        {kop.length === 0 ? "Pasang kop surat dulu →" : "Kelola kop surat"}
-      </Link>
+      {/* Selama belum ada kop, ini tombol penuh — bukan tulisan
+          kecil di ujung baris. Yang belum pernah memasang kop tidak
+          tahu ada halaman itu, dan tautan samar di antara deretan
+          tombol tidak akan pernah terlihat. Sesudah ada kopnya,
+          barulah ia menyusut jadi tautan biasa. */}
+      {kop.length === 0 ? (
+        <Link
+          prefetch={false}
+          href="/kop-surat"
+          className="inline-flex items-center gap-1.5 rounded border border-hijau px-3 py-1.5 text-xs font-medium text-hijau hover:bg-hijau-muda"
+        >
+          <Ikon nama="tambah" ukuran={13} />
+          Pasang kop surat
+        </Link>
+      ) : (
+        <Link
+          prefetch={false}
+          href="/kop-surat"
+          className="text-xs text-tinta-3 hover:text-tinta"
+        >
+          Kelola kop surat
+        </Link>
+      )}
     </div>
   );
 }
