@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Ikon from "@/components/ikon";
 import { buatKonsepKonten } from "@/lib/draf-actions";
 import { bacaBarisKalender, type BarisKalender } from "@/lib/kalender-baris";
+import { judulKonsep, punyaKonsep } from "@/lib/konsep-teks";
 
 /**
  * Membuat brief produksi dari satu baris kalender.
@@ -31,19 +32,29 @@ export function KonsepKonten({
   const [kabar, setKabar] = useState<string | null>(null);
   const [durasi, setDurasi] = useState(60);
   const [maks, setMaks] = useState(4);
+  /** Baris mana yang kotak perbaikannya sedang dibuka, beserta isinya. */
+  const [ulang, setUlang] = useState<number | null>(null);
+  const [permintaan, setPermintaan] = useState("");
   const [, mulai] = useTransition();
 
   const baris = bacaBarisKalender(naskah);
   if (baris.length === 0) return null;
 
-  function buat(b: BarisKalender) {
+  const sudahAda = (b: BarisKalender) =>
+    punyaKonsep(naskah, judulKonsep(b.tanggal, b.format));
+
+  function buat(b: BarisKalender, perbaikan = "") {
     setSedang(b.nomor);
     setKabar(null);
     mulai(async () => {
-      const h = await buatKonsepKonten(drafId, b, durasi, maks);
+      const h = await buatKonsepKonten(drafId, b, durasi, maks, perbaikan);
       setSedang(null);
       setKabar(h.pesan);
-      if (h.ok && h.isi) onSelesai(h.isi);
+      if (h.ok && h.isi) {
+        onSelesai(h.isi);
+        setUlang(null);
+        setPermintaan("");
+      }
       setTimeout(() => setKabar(null), 5000);
     });
   }
@@ -131,6 +142,9 @@ export function KonsepKonten({
               <span className="text-sm font-medium">{b.topik}</span>
               <span className="block text-xs text-tinta-3">
                 {[b.tanggal, b.format, b.dokter].filter(Boolean).join(" · ")}
+                {sudahAda(b) && (
+                  <span className="ml-1.5 text-hijau">· konsep sudah ada</span>
+                )}
               </span>
             </span>
 
@@ -142,14 +156,54 @@ export function KonsepKonten({
               </span>
             )}
 
-            <button
-              type="button"
-              disabled={sedang !== null}
-              onClick={() => buat(b)}
-              className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-            >
-              {sedang === b.nomor ? "Menyusun…" : "Buat konsep"}
-            </button>
+            {sudahAda(b) ? (
+              <button
+                type="button"
+                disabled={sedang !== null}
+                onClick={() => {
+                  setUlang(ulang === b.nomor ? null : b.nomor);
+                  setPermintaan("");
+                }}
+                className="rounded-lg border border-garis px-3 py-1.5 text-xs font-medium text-tinta-2 hover:bg-permukaan-2 disabled:opacity-50"
+              >
+                {sedang === b.nomor ? "Menyusun…" : "Susun ulang"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                disabled={sedang !== null}
+                onClick={() => buat(b)}
+                className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {sedang === b.nomor ? "Menyusun…" : "Buat konsep"}
+              </button>
+            )}
+
+            {ulang === b.nomor && (
+              <div className="flex w-full flex-col gap-2 border-t border-garis pt-2">
+                <textarea
+                  value={permintaan}
+                  onChange={(e) => setPermintaan(e.target.value)}
+                  rows={2}
+                  placeholder="Apa yang kurang? Misalnya: hooknya terlalu datar, tambahkan halaman tentang gejala pada lansia."
+                  className="w-full rounded border border-garis bg-permukaan px-3 py-2 text-sm outline-none focus:border-hijau focus:ring-2 focus:ring-hijau-muda"
+                />
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    disabled={sedang !== null}
+                    onClick={() => buat(b, permintaan)}
+                    className="rounded-lg bg-hijau px-3 py-1.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-60"
+                  >
+                    Susun ulang konsepnya
+                  </button>
+                  <span className="text-xs text-tinta-3">
+                    Yang lama diganti, bukan ditambah. Boleh dikosongkan kalau
+                    cuma ingin hasil yang berbeda.
+                  </span>
+                </div>
+              </div>
+            )}
           </li>
         ))}
       </ul>

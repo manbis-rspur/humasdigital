@@ -50,6 +50,7 @@ async function poliklinikDokter(nama: string): Promise<string> {
 export async function susunKonsepKonten(
   baris: BarisKalender,
   batas: { durasiVideo: number; maksCarousel: number },
+  perbaikan = "",
 ): Promise<HasilKonsep> {
   const db = createAdminClient();
 
@@ -78,6 +79,7 @@ export async function susunKonsepKonten(
     durasi_video: String(batas.durasiVideo),
     maks_carousel: String(batas.maksCarousel),
     catatan: "",
+    perbaikan,
   };
 
   const perintah: Bagian[] = [{ text: susunPerintah(modul.pola_perintah, isian) }];

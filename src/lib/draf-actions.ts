@@ -9,6 +9,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { JENIS_BERKAS_DRAF, jenisBerkasDrafDiterima, STATUS_DRAF } from "@/lib/draf";
 import { mintaPerbaikan, type HasilPerbaikan } from "@/lib/perbaikan";
 import { susunKonsepKonten } from "@/lib/konsep-konten";
+import { judulKonsep, tempelKonsep } from "@/lib/konsep-teks";
 import type { BarisKalender } from "@/lib/kalender-baris";
 import type { Balasan, Hasil } from "@/lib/hasil";
 
@@ -267,6 +268,7 @@ export async function buatKonsepKonten(
   baris: BarisKalender,
   durasiVideo = 60,
   maksCarousel = 4,
+  perbaikan = "",
 ): Promise<Balasan & { isi: string | null }> {
   const { pengguna, galat } = await pastikanBerhak();
   if (!pengguna) return { ok: false, pesan: galat ?? "Tidak berhak.", isi: null };
@@ -284,11 +286,20 @@ export async function buatKonsepKonten(
     return { ok: false, pesan: "Draf ini sudah dikirim ke arsip.", isi: null };
   }
 
-  const konsep = await susunKonsepKonten(baris, { durasiVideo, maksCarousel });
+  const konsep = await susunKonsepKonten(
+    baris,
+    { durasiVideo, maksCarousel },
+    perbaikan,
+  );
   if (konsep.hasil === null) return { ok: false, pesan: konsep.pesan, isi: null };
 
-  const kepala = ["Konsep", baris.tanggal, baris.format].filter(Boolean).join(" — ");
-  const baru = `${draf.isi.trimEnd()}\n\n---\n\n# ${kepala}\n\n${konsep.hasil}\n`;
+  // Ditempel bila belum ada, ditimpa bila sudah. Menekan "susun
+  // ulang" tidak boleh meninggalkan dua konsep untuk baris yang
+  // sama — yang membacanya nanti tidak akan tahu mana yang
+  // berlaku.
+  const kepala = judulKonsep(baris.tanggal, baris.format);
+  const adaSebelumnya = draf.isi.includes(`# ${kepala}`);
+  const baru = tempelKonsep(draf.isi, kepala, konsep.hasil);
 
   const { error } = await supabase
     .from("draf")
@@ -300,7 +311,13 @@ export async function buatKonsepKonten(
   }
 
   segarkan(drafId);
-  return { ok: true, pesan: "Konsep ditempelkan di bawah kalender.", isi: baru };
+  return {
+    ok: true,
+    pesan: adaSebelumnya
+      ? "Konsep disusun ulang, yang lama diganti."
+      : "Konsep ditempelkan di bawah kalender.",
+    isi: baru,
+  };
 }
 
 /** Mengunggah revisi. Versi lama tidak ditimpa. */
