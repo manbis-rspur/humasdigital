@@ -127,7 +127,11 @@ export function TampilHasil({
     setBenih(h.hasil);
     setPermintaan("");
     setWaspada(h.peringatan ?? null);
-    beriKabar("Sudah diperbaiki. Periksa dulu, lalu simpan.");
+    beriKabar(
+      h.ringkasan
+        ? `Sudah diperbaiki — ${h.ringkasan} Periksa dulu, lalu simpan.`
+        : "Sudah diperbaiki. Periksa dulu, lalu simpan.",
+    );
   }
 
   function batalkanPerbaikan() {

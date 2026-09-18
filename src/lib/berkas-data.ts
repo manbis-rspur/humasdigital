@@ -108,17 +108,78 @@ function dariExcel(isi: ArrayBuffer): string {
   return keluar.join("\n");
 }
 
+/**
+ * Satu baris tabel Word, dikembalikan jadi baris markdown.
+ *
+ * Kotaknya boleh memuat beberapa paragraf; semuanya digabung
+ * dengan titik koma, sama seperti aturan menulis tabel yang
+ * dipakai AI — supaya yang pulang berbentuk sama dengan yang
+ * berangkat.
+ */
+function barisDariTr(tr: string): string {
+  const kotak = tr
+    .split(/<\/w:tc>/)
+    .slice(0, -1)
+    .map((tc) =>
+      tc
+        .split(/<\/w:p>/)
+        .map((p) => tanpaTag(p))
+        .filter((p) => p !== "")
+        .join("; ")
+        .replace(/\|/g, "\\|"),
+    );
+
+  return `| ${kotak.join(" | ")} |`;
+}
+
+/**
+ * Isi berkas Word sebagai teks, TABELNYA TETAP TABEL.
+ *
+ * Dulu seluruh isinya dipipihkan jadi baris-baris paragraf. Untuk
+ * dibaca sepintas itu cukup, tetapi berakibat buruk pada satu hal
+ * yang justru paling sering dilakukan: melampirkan kalender yang
+ * sudah dirapikan tangan, lalu meminta diperbaiki seperlunya.
+ * Kalendernya sampai ke AI tanpa satu pun tanda tabel — tidak ada
+ * baris yang bisa ia pertahankan, jadi ia menyusunnya ulang. Lalu
+ * yang dikira rewel adalah AI-nya, padahal tabelnya memang sudah
+ * hilang sebelum sampai.
+ *
+ * Tabel Word tidak bersarang di dalam paragraf, jadi dokumennya
+ * dipenggal pada batas <w:tbl> lebih dulu; yang di dalamnya
+ * dibaca per baris, yang di luarnya per paragraf seperti dulu.
+ */
 function dariWord(isi: ArrayBuffer): string {
   const zip = new PizZip(isi);
   const xml = zip.file("word/document.xml")?.asText() ?? "";
 
-  // Tiap paragraf jadi satu baris, supaya tabel tidak berantakan
-  // menyatu jadi satu kalimat panjang.
-  return xml
-    .split(/<\/w:p>/)
-    .map((p) => tanpaTag(p))
-    .filter((p) => p !== "")
-    .join("\n");
+  const keluar: string[] = [];
+
+  for (const potong of xml.split(/(<w:tbl>[\s\S]*?<\/w:tbl>)/)) {
+    if (potong.startsWith("<w:tbl>")) {
+      const baris = potong
+        .split(/<\/w:tr>/)
+        .slice(0, -1)
+        .map(barisDariTr);
+
+      if (baris.length === 0) continue;
+
+      // Baris pemisah markdown disisipkan sesudah kepala tabel;
+      // tanpa itu yang membaca cuma melihat deretan garis tegak.
+      const jumlahKolom = (baris[0].match(/\|/g)?.length ?? 2) - 1;
+      keluar.push(baris[0]);
+      keluar.push(`|${" --- |".repeat(Math.max(jumlahKolom, 1))}`);
+      keluar.push(...baris.slice(1));
+      keluar.push("");
+      continue;
+    }
+
+    for (const p of potong.split(/<\/w:p>/)) {
+      const teks = tanpaTag(p);
+      if (teks !== "") keluar.push(teks);
+    }
+  }
+
+  return keluar.join("\n");
 }
 
 export type Kiriman =

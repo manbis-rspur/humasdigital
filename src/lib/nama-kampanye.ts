@@ -19,8 +19,15 @@
  * "kalender saja" jadi kosong.
  */
 
+/**
+ * "Kampan..." sengaja dibiarkan longgar. Pada satu kalender
+ * sungguhan, modelnya menulis "Nama Kampaneku:" — salah ketik
+ * yang membuat penanda ketat meleset, dan dokumennya kembali
+ * bernama potongan cerita. Yang dicari sebetulnya kata di depan
+ * titik dua, bukan ejaannya yang sempurna.
+ */
 const PENANDA =
-  /^\s*\**\s*(?:Nama Kampanye|Judul Ringkas)\s*\**\s*:\s*\**\s*(.+?)\s*$/i;
+  /^\s*\**\s*(?:Nama Kampan[a-z]*|Judul Ringkas)\s*\**\s*:\s*\**\s*(.+?)\s*$/i;
 
 /** Berapa baris pertama yang ditengok. Penandanya memang di kepala. */
 const JANGKAUAN = 12;

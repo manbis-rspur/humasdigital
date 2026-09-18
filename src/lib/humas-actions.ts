@@ -9,6 +9,7 @@ import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
 import { namaKampanye } from "@/lib/nama-kampanye";
+import { mintaPerbaikan } from "@/lib/perbaikan";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
@@ -19,6 +20,10 @@ export type HasilSusun = {
   hasil: string | null;
   judul: string;
   riwayatId: number | null;
+  /** Terisi bila naskah lampiran berubah lebih jauh dari yang diminta. */
+  peringatan?: string;
+  /** Berapa baris tabel lampiran yang berubah. */
+  ringkasan?: string;
 };
 
 /**
@@ -88,6 +93,109 @@ async function bacaRujukan(jalur: string[]): Promise<Bagian[]> {
 
   await db.storage.from("dokumen").remove(jalur);
   return bagian;
+}
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/**
+ * Menyunting naskah yang datang sebagai lampiran.
+ *
+ * Perintahnya diambil dari isian wajib pertama — di situlah orang
+ * menuliskan apa yang ingin diperbaiki. Isian lain (bulan, kanal,
+ * pilar) sengaja tidak ikut: itu takaran untuk MENYUSUN, dan
+ * menyerahkannya ke penyunting sama saja menyuruh dia menyesuaikan
+ * seluruh naskah dengan takaran baru.
+ */
+async function perbaikiLampiran({
+  modul,
+  rujukan,
+  isian,
+  kolom,
+  untukRspur,
+  instansi,
+  penggunaId,
+  supabase,
+}: {
+  modul: any;
+  rujukan: Bagian[];
+  isian: Record<string, string>;
+  kolom: { kunci: string; wajib?: boolean }[];
+  untukRspur: boolean;
+  instansi: string;
+  penggunaId: number;
+  supabase: any;
+}): Promise<HasilSusun> {
+  const gagal = (pesan: string): HasilSusun => ({
+    pesan,
+    hasil: null,
+    judul: "",
+    riwayatId: null,
+  });
+
+  // Gambar dan PDF pindai tidak punya bagian teks, jadi tidak ada
+  // naskah yang bisa disunting. Dikatakan terus terang — lebih
+  // baik daripada diam-diam kembali menyusun ulang.
+  const naskah = rujukan
+    .map((b) => ("text" in b ? b.text : ""))
+    .filter((t) => t.trim() !== "")
+    .join("\n\n");
+
+  if (naskah.trim() === "") {
+    return gagal(
+      "Lampirannya tidak terbaca sebagai teks, jadi tidak ada naskah yang bisa " +
+        "diperbaiki. Pakai berkas Word, Excel, CSV, atau teks — atau pilih " +
+        "\"Jadikan bahan\" kalau memang ingin disusun baru.",
+    );
+  }
+
+  const kunciUtama = kolom.find((k) => k.wajib)?.kunci ?? kolom[0]?.kunci;
+  const permintaan = ((kunciUtama && isian[kunciUtama]) || "").trim();
+
+  if (permintaan === "") {
+    return gagal("Tulis dulu apa yang perlu diperbaiki pada naskah lampiran itu.");
+  }
+
+  const hasil = await mintaPerbaikan({
+    namaDokumen: modul.judul,
+    instruksi: modul.instruksi_sistem,
+    pakaiDokter: modul.pakai_dokter === true,
+    pakaiLayanan: modul.pakai_layanan === true,
+    pakaiIsu: modul.pakai_isu === true,
+    pakaiSumber: modul.pakai_sumber === true,
+    untukRspur,
+    instansi: instansi === "" ? null : instansi,
+    naskah,
+    permintaan,
+  });
+
+  if (hasil.hasil === null) return gagal(hasil.pesan ?? "Gagal memperbaiki.");
+
+  const judul = namaKampanye(hasil.hasil) ?? `${modul.judul} (perbaikan)`;
+
+  const { data: tersimpan } = await supabase
+    .from("riwayat_ai")
+    .insert({
+      modul_id: modul.id,
+      modul_judul: modul.judul,
+      judul: judul.slice(0, 200),
+      hasil: hasil.hasil,
+      masukan: isian,
+      untuk_rspur: untukRspur,
+      instansi: instansi === "" ? null : instansi,
+      oleh: penggunaId,
+    })
+    .select("id")
+    .single();
+
+  revalidatePath("/riwayat");
+
+  return {
+    pesan: null,
+    hasil: hasil.hasil,
+    judul,
+    riwayatId: tersimpan?.id ?? null,
+    peringatan: hasil.peringatan,
+    ringkasan: hasil.ringkasan,
+  };
 }
 
 export async function jalankanModul(
@@ -171,6 +279,35 @@ export async function jalankanModul(
    */
   const untukRspur = formData.get("untuk_rspur") !== null;
   const instansi = String(formData.get("instansi") ?? "").trim();
+
+  /**
+   * Lampiran yang BUKAN bahan, melainkan naskah yang sudah jadi.
+   *
+   * Ini yang selama ini keliru. Orang merapikan sendiri kalender
+   * yang sudah disusun, melampirkannya, lalu menulis "tolong
+   * dianalisa, perbaiki yang belum benar" — dan yang kembali
+   * kalender yang sama sekali baru. Wajar: jalur ini memang jalur
+   * MENYUSUN, instruksi sistemnya berbunyi "susun kalender
+   * konten", dan lampirannya diperkenalkan sebagai bahan.
+   *
+   * Maka diberi jalur sendiri: naskah lampirannya diserahkan ke
+   * penyunting, bukan ke penyusun.
+   */
+  if (
+    formData.get("perlakuan_rujukan") === "perbaiki" &&
+    rujukan.length > 0
+  ) {
+    return await perbaikiLampiran({
+      modul,
+      rujukan,
+      isian,
+      kolom,
+      untukRspur,
+      instansi,
+      penggunaId: pengguna.id,
+      supabase,
+    });
+  }
 
   const dokter =
     untukRspur && modul.pakai_dokter === true ? await daftarDokterUntukAI() : null;

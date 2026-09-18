@@ -5,6 +5,7 @@ import { jalankanModul, siapkanRujukan, type HasilSusun } from "@/lib/humas-acti
 import { unggahLewatIzin } from "@/lib/unggah-berkas";
 import { ACCEPT_DATA, MAKS_DATA } from "@/lib/berkas-jenis";
 import { TampilHasil } from "@/components/tampil-hasil";
+import Ikon from "@/components/ikon";
 import { kunciLain, type Kolom } from "@/lib/modul-ai";
 import type { Usulan } from "@/lib/isu";
 import { PanelUsulan } from "./panel-usulan";
@@ -310,6 +311,47 @@ export function FormJalankan({
             ruangan, panduan merek, kerangka acuan acara, atau contoh konten
             sebelumnya. Isinya dibaca sebagai bahan, lalu berkasnya dibuang.
           </p>
+
+          {/* Dua perlakuan yang sangat berbeda, dan salah pilih
+              berakibat naskah yang sudah dirapikan tangan ditulis
+              ulang habis. Karena itu ditanyakan terang-terangan,
+              bukan ditebak dari isi berkasnya. */}
+          <div className="mt-3 flex flex-col gap-2 border-t border-garis pt-3">
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="perlakuan_rujukan"
+                value="bahan"
+                defaultChecked
+                className="mt-0.5 accent-hijau"
+              />
+              <span>
+                Jadikan bahan
+                <span className="block text-xs text-tinta-3">
+                  Dokumen baru disusun dari nol, lampirannya dipakai sebagai
+                  masukan.
+                </span>
+              </span>
+            </label>
+
+            <label className="flex items-start gap-2 text-sm">
+              <input
+                type="radio"
+                name="perlakuan_rujukan"
+                value="perbaiki"
+                className="mt-0.5 accent-hijau"
+              />
+              <span>
+                Lampirannya naskah yang sudah ada — perbaiki seperlunya
+                <span className="block text-xs text-tinta-3">
+                  Isinya dipertahankan apa adanya; yang disentuh hanya yang Anda
+                  minta. Saran di luar itu ditulis sebagai catatan di bawah,
+                  bukan langsung diubah. Untuk berkas Word, Excel, CSV, atau
+                  teks.
+                </span>
+              </span>
+            </label>
+          </div>
         </fieldset>
 
         {hasil.pesan && (
@@ -332,6 +374,22 @@ export function FormJalankan({
           </p>
         )}
       </form>
+
+      {/* Perbaikan naskah lampiran: berapa banyak yang ikut
+          berubah dilaporkan sebelum hasilnya dibaca, supaya yang
+          memeriksa tahu harus curiga atau tidak. */}
+      {hasil.hasil && (hasil.peringatan || hasil.ringkasan) && (
+        <p
+          className={
+            hasil.peringatan
+              ? "flex items-start gap-2 rounded-lg border-l-4 border-oker bg-[#f6efe2] px-4 py-3 text-sm"
+              : "text-sm text-tinta-2"
+          }
+        >
+          {hasil.peringatan && <Ikon nama="peringatan" ukuran={15} />}
+          <span>{hasil.peringatan ?? hasil.ringkasan}</span>
+        </p>
+      )}
 
       {hasil.hasil && (
         <TampilHasil

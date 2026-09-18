@@ -36,6 +36,10 @@ export function NaskahDraf({
   const [permintaan, setPermintaan] = useState("");
   const [sebelumPerbaikan, setSebelumPerbaikan] = useState<string | null>(null);
   const [kabar, setKabar] = useState<string | null>(null);
+  /* Peringatan perbaikan tidak ikut hilang sendiri seperti kabar
+     biasa. Pesan yang menyuruh memeriksa tapi lenyap empat detik
+     kemudian sama saja dengan tidak ada. */
+  const [waspada, setWaspada] = useState<string | null>(null);
   const [sedang, mulai] = useTransition();
 
   const belumSimpan = naskah !== tersimpan;
@@ -66,7 +70,12 @@ export function NaskahDraf({
         setNaskah(h.hasil);
         setBenih(h.hasil);
         setPermintaan("");
-        setKabar(h.peringatan ?? "Sudah diperbaiki. Periksa dulu, lalu simpan naskahnya.");
+        setWaspada(h.peringatan ?? null);
+        setKabar(
+          h.ringkasan
+            ? `Sudah diperbaiki — ${h.ringkasan} Periksa dulu, lalu simpan naskahnya.`
+            : "Sudah diperbaiki. Periksa dulu, lalu simpan naskahnya.",
+        );
       }
       setTimeout(() => setKabar(null), 4000);
     });
@@ -77,6 +86,7 @@ export function NaskahDraf({
     setNaskah(sebelumPerbaikan);
     setBenih(sebelumPerbaikan);
     setSebelumPerbaikan(null);
+    setWaspada(null);
   }
 
   async function salinBerbentuk(sasaran: HTMLElement | null) {
@@ -144,6 +154,13 @@ export function NaskahDraf({
       </div>
 
       {kabar && <p className="text-sm text-hijau">{kabar}</p>}
+
+      {waspada && (
+        <p className="flex items-start gap-2 rounded-lg border-l-4 border-oker bg-[#f6efe2] px-4 py-3 text-sm">
+          <Ikon nama="peringatan" ukuran={15} />
+          <span>{waspada}</span>
+        </p>
+      )}
 
       {!terkunci && (
         <div className="flex flex-col gap-2 rounded-lg border border-garis bg-permukaan-2 px-4 py-3">
