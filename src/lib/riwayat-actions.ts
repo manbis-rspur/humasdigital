@@ -98,6 +98,7 @@ export async function perbaikiDokumen(
     pakaiDokter: modul?.pakai_dokter === true,
     pakaiLayanan: modul?.pakai_layanan === true,
     pakaiIsu: modul?.pakai_isu === true,
+    pakaiSumber: modul?.pakai_sumber === true,
     // Belum ada penandanya berarti dokumen lama, dan seluruh
     // dokumen lama memang untuk RSPUR.
     untukRspur: riwayat.untuk_rspur !== false,

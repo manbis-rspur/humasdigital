@@ -4,6 +4,7 @@ import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
+import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
 
 /**
  * Meminta AI memperbaiki dokumen yang sudah ada.
@@ -46,6 +47,7 @@ export async function mintaPerbaikan({
   pakaiDokter,
   pakaiLayanan,
   pakaiIsu,
+  pakaiSumber = false,
   untukRspur,
   instansi,
   naskah,
@@ -57,6 +59,13 @@ export async function mintaPerbaikan({
   pakaiDokter: boolean;
   pakaiLayanan: boolean;
   pakaiIsu: boolean;
+  /**
+   * Baris yang baru ditambahkan lewat perbaikan juga memuat klaim
+   * medis, dan tanpa daftar sumber AI akan mengarang alamat untuk
+   * baris baru itu saja — di tengah dokumen yang sumber-sumber
+   * lamanya sudah benar, dan justru di situ paling sulit terlihat.
+   */
+  pakaiSumber?: boolean;
   /** Dokumen milik instansi lain tidak boleh dibekali data RSPUR. */
   untukRspur: boolean;
   instansi: string | null;
@@ -109,6 +118,9 @@ export async function mintaPerbaikan({
     const dokter = await daftarDokterUntukAI(klien);
     if (dokter) perintah.push({ text: dokter });
   }
+  if (pakaiSumber) {
+    perintah.push({ text: await daftarSumberUntukAI(klien) });
+  }
 
   if (!untukRspur) {
     perintah.push({
@@ -126,7 +138,8 @@ export async function mintaPerbaikan({
     // Suhu tinggi membuat AI ikut mengubah kalimat yang tidak
     // diminta, dan perubahan diam-diam itulah yang paling sulit
     // ketahuan.
-    const hasil = tanpaPagar(await susunDenganAI(perintah, instruksi ?? INSTRUKSI_UMUM, 0.25));
+    const mentah = tanpaPagar(await susunDenganAI(perintah, instruksi ?? INSTRUKSI_UMUM, 0.25));
+    const hasil = pakaiSumber ? await bersihkanAlamat(mentah, klien) : mentah;
 
     // Kadang AI mengembalikan potongan yang diubah saja, bukan
     // dokumen utuh — walaupun sudah diminta. Kalau dibiarkan lewat

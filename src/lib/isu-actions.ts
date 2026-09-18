@@ -153,6 +153,9 @@ export async function hapusBahan(formData: FormData) {
 }
 
 
+/** Kode Postgres untuk kolom yang tidak ada. */
+const KOLOM_TIDAK_ADA = "42703";
+
 /** Menambah atau memperbaiki satu sumber rujukan. */
 export async function simpanSumber(_s: Hasil, formData: FormData): Promise<Hasil> {
   const { pengguna, galat } = await pastikanBerhak();
@@ -166,10 +169,13 @@ export async function simpanSumber(_s: Hasil, formData: FormData): Promise<Hasil
     return { pesan: "Tautannya harus dimulai dengan https://", berhasil: null };
   }
 
+  const lingkup = isi(formData, "lingkup") === "internasional" ? "internasional" : "nasional";
+
   const isian = {
     lembaga,
     judul: isiAtauNull(formData, "judul"),
     tautan,
+    lingkup,
     topik: isiAtauNull(formData, "topik"),
     catatan: isiAtauNull(formData, "catatan"),
     aktif: formData.get("aktif") !== null,
@@ -178,11 +184,24 @@ export async function simpanSumber(_s: Hasil, formData: FormData): Promise<Hasil
   const id = Number(formData.get("id"));
   const supabase = await createClient();
 
-  const { error } = id
-    ? await supabase.from("sumber_rujukan").update(isian).eq("id", id)
-    : await supabase
-        .from("sumber_rujukan")
-        .insert({ ...isian, ditambah_oleh: pengguna.id });
+  const simpan = (nilai: Record<string, unknown>) =>
+    id
+      ? supabase.from("sumber_rujukan").update(nilai).eq("id", id)
+      : supabase
+          .from("sumber_rujukan")
+          .insert({ ...nilai, ditambah_oleh: pengguna.id });
+
+  let { error } = await simpan(isian);
+
+  // Kolom lingkup baru ada sesudah berkas SQL 54 dijalankan.
+  // Selama belum, sumbernya tetap boleh disimpan tanpa lingkup —
+  // menolak menyimpan berarti fitur lama ikut mati gara-gara
+  // tambahan yang belum dipasang.
+  if (error?.code === KOLOM_TIDAK_ADA) {
+    const tanpaLingkup: Record<string, unknown> = { ...isian };
+    delete tanpaLingkup.lingkup;
+    ({ error } = await simpan(tanpaLingkup));
+  }
 
   if (error) {
     return {

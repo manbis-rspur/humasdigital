@@ -247,6 +247,7 @@ export async function perbaikiNaskahDraf(
     pakaiDokter: modul?.pakai_dokter === true,
     pakaiLayanan: modul?.pakai_layanan === true,
     pakaiIsu: modul?.pakai_isu === true,
+    pakaiSumber: modul?.pakai_sumber === true,
     untukRspur: draf.untuk_rspur !== false,
     instansi: draf.instansi ?? null,
     naskah,

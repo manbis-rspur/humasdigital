@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
+import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
@@ -208,6 +209,13 @@ export async function jalankanModul(
   if (layanan) perintah.push({ text: layanan });
   if (dokter) perintah.push({ text: dokter });
 
+  // Daftar sumber rujukan. Tidak digantung pada untukRspur:
+  // pedoman Kemenkes dan WHO bukan milik RSPUR, dan instansi lain
+  // justru sama-sama membutuhkannya.
+  if (modul.pakai_sumber === true) {
+    perintah.push({ text: await daftarSumberUntukAI() });
+  }
+
   if (!untukRspur) {
     // Ditaruh paling belakang supaya terbaca sesudah instruksi
     // sistem modul, yang menyebut RSPUR sebagai tempat bekerja.
@@ -237,6 +245,7 @@ export async function jalankanModul(
   let hasil: string;
   try {
     hasil = await susunDenganAI(perintah, modul.instruksi_sistem);
+    if (modul.pakai_sumber === true) hasil = await bersihkanAlamat(hasil);
   } catch (galat) {
     const pesan = galat instanceof Error ? galat.message : "Gagal menghubungi Gemini.";
     return { pesan, hasil: null, judul: "", riwayatId: null };

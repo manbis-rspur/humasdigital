@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import Ikon from "@/components/ikon";
 import { simpanSumber } from "@/lib/isu-actions";
-import { LEMBAGA_LAZIM } from "@/lib/sumber";
+import { LEMBAGA_LAZIM, LINGKUP } from "@/lib/sumber";
 import { hasilAwal } from "@/lib/hasil";
 
 const gaya =
@@ -89,6 +89,21 @@ export function SumberBaru() {
           <span className="text-xs text-tinta-3">
             Tempel dari halaman yang memang sudah Anda buka. Inilah yang akan
             disalin AI apa adanya ke dalam konsep.
+          </span>
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="font-medium">Lingkup</span>
+          <select name="lingkup" defaultValue="nasional" className={gaya}>
+            {LINGKUP.map((l) => (
+              <option key={l.nilai} value={l.nilai}>
+                {l.label}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs text-tinta-3">
+            Pedoman Indonesia atau rujukan luar negeri. Dipakai AI untuk
+            menopang tiap klaim dengan keduanya sekaligus.
           </span>
         </label>
 

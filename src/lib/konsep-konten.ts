@@ -4,7 +4,7 @@ import { susunDenganAI, susunSambilMencari, type Bagian, type SumberTemuan } fro
 import { susunPerintah } from "@/lib/modul-ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
-import { daftarSumberUntukAI } from "@/lib/sumber-data";
+import { alamatSumberSahih, daftarSumberUntukAI } from "@/lib/sumber-data";
 import { indukDiizinkan, saringTautan } from "@/lib/saring-tautan";
 import { tanpaPagar } from "@/lib/perbaikan";
 import { kunciNama } from "@/lib/jadwal-ubah";
@@ -101,12 +101,7 @@ export async function susunKonsepKonten(
   perintah.push({ text: await daftarSumberUntukAI(db) });
 
   // Alamat sumber yang sudah didaftarkan manusia — selalu sahih.
-  const { data: terdaftar } = await db
-    .from("sumber_rujukan")
-    .select("tautan")
-    .eq("aktif", true);
-
-  const alamatSahih = ((terdaftar ?? []) as { tautan: string }[]).map((t) => t.tautan);
+  const alamatSahih = await alamatSumberSahih(db);
 
   /**
    * Dicoba mencari dulu, baru menyusun tanpa mencari.
@@ -131,11 +126,14 @@ export async function susunKonsepKonten(
         {
           text:
             `Anda boleh MENCARI DI WEB untuk mengisi tabel Sumber Rujukan. ` +
-            `Utamakan halaman resmi Kementerian Kesehatan RI, WHO, dan ` +
-            `perhimpunan dokter spesialis Indonesia. Tulis alamat yang ` +
+            `Carilah dua-duanya: pedoman NASIONAL (Kementerian Kesehatan RI ` +
+            `atau perhimpunan dokter spesialis Indonesia) dan rujukan ` +
+            `INTERNASIONAL (WHO, CDC, dan sejenisnya). Tulis alamat yang ` +
             `BENAR-BENAR Anda buka saat mencari — jangan menuliskan alamat ` +
-            `dari ingatan. Klaim yang tidak ketemu sumbernya tetap ditulis ` +
-            `"belum terdaftar — tambahkan di Bahan Tema".`,
+            `dari ingatan. Baris yang alamatnya berasal dari pencarian ini ` +
+            `diberi Status "Terdaftar". Klaim yang tidak ketemu sumbernya ` +
+            `diberi Status "Usulan — perlu diperiksa", kolom tautannya tanda ` +
+            `hubung, dan nama lembaga serta nama pedomannya tetap disebutkan.`,
         },
       ],
       modul.instruksi_sistem,

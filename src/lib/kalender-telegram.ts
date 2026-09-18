@@ -4,6 +4,7 @@ import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { susunPerintah, bacaKolom } from "@/lib/modul-ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
+import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { mintaPerbaikan } from "@/lib/perbaikan";
 import { bacaBarisKalender } from "@/lib/kalender-baris";
@@ -117,10 +118,14 @@ export async function susunKalenderLewatTelegram(
     const dokter = await daftarDokterUntukAI(db);
     if (dokter) perintah.push({ text: dokter });
   }
+  if (modul.pakai_sumber === true) {
+    perintah.push({ text: await daftarSumberUntukAI(db) });
+  }
 
   let hasil: string;
   try {
     hasil = await susunDenganAI(perintah, modul.instruksi_sistem);
+    if (modul.pakai_sumber === true) hasil = await bersihkanAlamat(hasil, db);
   } catch (galat) {
     return gagal(galat instanceof Error ? galat.message : "Gagal menghubungi Gemini.");
   }
@@ -200,6 +205,7 @@ export async function perbaikiKalenderLewatTelegram(
     pakaiDokter: modul?.pakai_dokter === true,
     pakaiLayanan: modul?.pakai_layanan === true,
     pakaiIsu: modul?.pakai_isu === true,
+    pakaiSumber: modul?.pakai_sumber === true,
     untukRspur: draf.untuk_rspur !== false,
     instansi: draf.instansi ?? null,
     naskah: draf.isi,

@@ -43,14 +43,18 @@ export default async function HalamanIsu() {
       .order("mulai", { ascending: false }),
     supabase
       .from("sumber_rujukan")
-      .select("id, lembaga, judul, tautan, topik, catatan, aktif")
+      // Seluruh kolom: kolom lingkup baru ada sesudah SQL 54.
+      .select("*")
       .order("lembaga"),
     bacaUsulan(),
   ]);
 
   const daftarHari = (hari ?? []) as unknown as HariKesehatan[];
   const daftarIsu = (isu ?? []) as unknown as IsuRamai[];
-  const daftarSumber = (sumber ?? []) as unknown as Sumber[];
+  const daftarSumber = ((sumber ?? []) as unknown as Sumber[]).sort(
+    (a, b) =>
+      (a.lingkup === "internasional" ? 1 : 0) - (b.lingkup === "internasional" ? 1 : 0),
+  );
   const terdekat = usulan.slice(0, 6);
 
   const perBulan = NAMA_BULAN.slice(1).map((nama, i) => ({
@@ -136,11 +140,17 @@ export default async function HalamanIsu() {
         <div>
           <h2 className="text-lg font-medium">Sumber rujukan</h2>
           <p className="mt-1 max-w-2xl text-sm text-tinta-2">
-            Dipakai AI untuk mengisi tabel Sumber pada tiap konsep konten. AI
-            hanya boleh menyalin dari daftar ini — klaim yang tidak tercakup
-            ditandai &ldquo;belum terdaftar&rdquo;, bukan ditambal sumber
-            karangan. Isinya ditempel sendiri dari halaman yang memang sudah
+            Dipakai AI untuk mengisi tabel sumber pada kalender konten dan
+            tiap konsep konten. <strong>Alamat</strong> hanya boleh disalin dari
+            daftar ini — klaim yang tidak tercakup ditandai &ldquo;Usulan —
+            perlu diperiksa&rdquo; beserta nama pedoman yang patut dicari, tanpa
+            alamat. Isinya ditempel sendiri dari halaman yang memang sudah
             dibuka.
+          </p>
+          <p className="mt-2 max-w-2xl text-sm text-tinta-2">
+            Daftarkan yang nasional maupun internasional: pedoman Indonesia
+            mengikat praktik di sini, rujukan internasional jadi dasarnya dan
+            bisa ditelusuri lebih dalam.
           </p>
         </div>
 
@@ -148,8 +158,9 @@ export default async function HalamanIsu() {
 
         {daftarSumber.length === 0 ? (
           <p className="rounded-xl border-l-4 border-oker bg-[#f6efe2] px-4 py-3 text-sm">
-            Belum ada sumber terdaftar. Selama kosong, tiap konsep akan menulis
-            &ldquo;belum terdaftar&rdquo; di seluruh baris tabel sumbernya.
+            Belum ada sumber terdaftar. Selama kosong, tidak ada satu pun
+            alamat yang boleh ditulis AI — seluruh baris tabel sumbernya
+            bertanda &ldquo;Usulan — perlu diperiksa&rdquo;.
           </p>
         ) : (
           <ul className="flex flex-col gap-1.5">
@@ -162,6 +173,9 @@ export default async function HalamanIsu() {
               >
                 <span className="mr-auto min-w-0">
                   <span className="font-medium">{s.lembaga}</span>
+                  <span className="ml-2 rounded-md bg-permukaan-2 px-1.5 py-0.5 align-middle text-[11px] text-tinta-2">
+                    {s.lingkup === "internasional" ? "Internasional" : "Nasional"}
+                  </span>
                   {s.judul && (
                     <span className="text-tinta-2"> — {s.judul}</span>
                   )}
