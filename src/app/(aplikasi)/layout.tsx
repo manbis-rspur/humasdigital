@@ -111,7 +111,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
 
       <footer className="border-t border-garis px-5 py-4">
         <p className="mx-auto max-w-6xl text-xs text-tinta-3">
-          Humas &amp; Pemasaran — RS Pertamedika Ummi Rosnati
+          Humas &amp; Pemasaran
         </p>
       </footer>
     </div>

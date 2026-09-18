@@ -25,10 +25,7 @@ export default async function HalamanMasuk({ searchParams }: PageProps<"/login">
           />
         )}
 
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-tinta-3">
-          RSPUR
-        </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-tight">
+        <h1 className="text-2xl font-semibold tracking-tight">
           Humas &amp; Pemasaran
         </h1>
         <p className="mt-2 mb-7 text-sm text-tinta-2">
