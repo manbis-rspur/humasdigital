@@ -75,12 +75,7 @@ export default async function LayoutAplikasi({ children }: LayoutProps<"/">) {
                 className="h-9 w-auto max-w-[7rem] object-contain"
               />
             )}
-            <span className="block">
-              <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-tinta-3">
-                RSPUR
-              </span>
-              <span className="block font-medium">Humas &amp; Pemasaran</span>
-            </span>
+            <span className="block font-medium">Humas &amp; Pemasaran</span>
           </Link>
 
           <Navigasi menu={menu} />
