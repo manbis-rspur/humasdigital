@@ -5,6 +5,7 @@ import { susunPerintah, bacaKolom } from "@/lib/modul-ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
 import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
+import { namaKampanye } from "@/lib/nama-kampanye";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { mintaPerbaikan } from "@/lib/perbaikan";
 import { bacaBarisKalender } from "@/lib/kalender-baris";
@@ -130,7 +131,9 @@ export async function susunKalenderLewatTelegram(
     return gagal(galat instanceof Error ? galat.message : "Gagal menghubungi Gemini.");
   }
 
-  const judul = petikJudul(hasil);
+  // Nama kampanye lebih dulu; judul bagian dipakai bila modulnya
+  // belum menuliskan nama kampanye.
+  const judul = namaKampanye(hasil) ?? petikJudul(hasil);
 
   await db.from("riwayat_ai").insert({
     modul_id: modul.id,

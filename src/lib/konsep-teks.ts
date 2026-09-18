@@ -11,7 +11,26 @@
  */
 
 export function judulKonsep(tanggal: string, format: string): string {
-  return ["Konsep", tanggal, format].filter((b) => b.trim() !== "").join(" — ");
+  return [AWALAN, tanggal, format].filter((b) => b.trim() !== "").join(" — ");
+}
+
+/**
+ * Kata pembuka judul tiap konsep, sekaligus penanda batas bagian.
+ *
+ * Batasnya dulu "judul setingkat satu apa pun". Ternyata AI
+ * kadang mengawali kalendernya sendiri dengan judul setingkat
+ * satu — dan begitu itu terjadi, kalendernya terhitung sebagai
+ * sebuah konsep, sehingga unduhan "kalender saja" mengembalikan
+ * kosong dan seluruh kalender terlipat di balik panel. Jadi yang
+ * dijadikan batas bukan tanda pagarnya, melainkan kata ini.
+ */
+const AWALAN = "Konsep";
+
+/** Apakah baris ini judul pembuka sebuah konsep. */
+function batasKonsep(baris: string): string | null {
+  const kepala = /^#\s+(.*\S)\s*$/.exec(baris);
+  if (!kepala) return null;
+  return kepala[1].startsWith(AWALAN) ? kepala[1] : null;
 }
 
 /** Apakah naskah ini sudah memuat konsep untuk baris tersebut. */
@@ -40,7 +59,7 @@ export function tempelKonsep(
 
   // Cari awal bagian berikutnya sesudah bagian ini.
   const sesudah = naskah.slice(mulai + penanda.length);
-  const cocok = /\n(?:---+\s*\n|# )/.exec(sesudah);
+  const cocok = new RegExp(`\\n(?:---+\\s*\\n|# ${AWALAN})`).exec(sesudah);
   const akhir = cocok ? mulai + penanda.length + cocok.index + 1 : naskah.length;
 
   return `${naskah.slice(0, mulai)}${bagian}\n${naskah.slice(akhir)}`.replace(
@@ -59,8 +78,9 @@ export type BagianNaskah = {
  * Memisah naskah jadi kalender dan konsep-konsepnya.
  *
  * Tiap konsep ditempel dengan judul setingkat satu ("# Konsep — …"),
- * dan itulah batasnya. Kalendernya sendiri memakai judul setingkat
- * dua ke bawah, jadi ia tidak ikut terpotong.
+ * dan itulah batasnya — judul setingkat satu yang BUKAN diawali
+ * kata "Konsep" dibiarkan jadi bagian kalendernya, karena AI
+ * kadang menamai kalendernya sendiri dengan tanda yang sama.
  *
  * Gunanya supaya konsep bisa dilipat. Satu kalender dengan enam
  * konsep di bawahnya bisa berpuluh halaman di layar, dan yang
@@ -83,11 +103,11 @@ export function pisahBagian(naskah: string): BagianNaskah[] {
   };
 
   for (const b of baris) {
-    const kepala = /^#\s+(.*\S)\s*$/.exec(b);
+    const kepala = batasKonsep(b);
 
     if (kepala) {
       tutup();
-      judul = kepala[1];
+      judul = kepala;
       continue;
     }
 

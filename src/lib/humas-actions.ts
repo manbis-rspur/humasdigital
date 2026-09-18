@@ -8,6 +8,7 @@ import { susunDenganAI, type Bagian } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
+import { namaKampanye } from "@/lib/nama-kampanye";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { MAKS_DATA, jenisDataDiterima, siapkanKiriman } from "@/lib/berkas-data";
@@ -251,17 +252,20 @@ export async function jalankanModul(
     return { pesan, hasil: null, judul: "", riwayatId: null };
   }
 
-  // Judul riwayat diambil dari isian wajib pertama — itu biasanya
-  // yang paling menjelaskan isi dokumennya.
+  // Judul riwayat: nama kampanye yang ditulis AI di kepala
+  // dokumen, kalau modulnya memang diminta menuliskannya.
   //
-  // Dipotong pada baris pertama dan dibatasi pendek. Sebagian isian
-  // kini berupa cerita beberapa kalimat, dan cerita utuh yang
-  // dijadikan judul membuat daftar riwayat tidak bisa dipindai mata.
+  // Cadangannya isian wajib pertama, dipotong pada baris pertama
+  // dan dibatasi pendek. Cadangan itu dulu satu-satunya cara, dan
+  // hasilnya cerita beberapa kalimat yang terpenggal di tengah
+  // kata — daftar riwayat jadi tidak bisa dipindai mata.
   const kunciJudul = kolom.find((k) => k.wajib)?.kunci ?? kolom[0]?.kunci;
   const mentah = ((kunciJudul && isian[kunciJudul]) || modul.judul).trim();
   const barisPertama = mentah.split("\n")[0].trim() || modul.judul;
-  const judul =
+  const cadangan =
     barisPertama.length > 90 ? `${barisPertama.slice(0, 89)}…` : barisPertama;
+
+  const judul = namaKampanye(hasil) ?? cadangan;
 
   const { data: tersimpan } = await supabase
     .from("riwayat_ai")
