@@ -17,26 +17,26 @@ type Klien = SupabaseClient<any, any, any>;
  *
  * Isi pokoknya: ALAMAT hanya boleh disalin, sedangkan NAMA
  * LEMBAGA dan NAMA PEDOMAN boleh disebut dari pengetahuan AI
- * asalkan ditandai belum diperiksa. Menyebut nama pedoman
- * memberi petunjuk mencari; menulis alamat palsu memberi rasa
- * aman palsu.
+ * asalkan diawali "Usulan:" dan tanpa alamat. Menyebut nama
+ * pedoman memberi petunjuk mencari; menulis alamat palsu memberi
+ * rasa aman palsu.
  */
 const ATURAN =
-  `Aturan mengisi kolom sumber:\n` +
-  `1. Kolom Tautan HANYA boleh diisi dengan menyalin alamat dari daftar di ` +
-  `atas, huruf demi huruf. Tidak ada sumber alamat yang lain.\n` +
-  `2. Klaim yang tercakup daftar: salin Lembaga, Judul Sumber, dan Tautan ` +
-  `dari daftar, lalu tulis "Terdaftar" pada kolom Status.\n` +
-  `3. Klaim yang TIDAK tercakup daftar: tulis "Usulan — perlu diperiksa" pada ` +
-  `kolom Status dan tanda hubung pada kolom Tautan. Kolom Lembaga dan Judul ` +
-  `Sumber boleh diisi lembaga serta nama pedoman yang Anda yakini memuat klaim ` +
-  `itu, supaya yang memeriksa tahu harus mencari ke mana.\n` +
+  `Aturan memakai daftar di atas:\n` +
+  `1. ALAMAT WEB hanya boleh diisi dengan menyalin dari daftar ini, huruf demi ` +
+  `huruf. Tidak ada sumber alamat yang lain.\n` +
+  `2. Sumbernya ada di daftar: salin nama lembaga, judulnya, dan tautannya apa adanya.\n` +
+  `3. Sumbernya TIDAK ada di daftar: sebutkan lembaga dan nama pedoman yang Anda ` +
+  `yakini memuat klaim itu, diawali kata "Usulan:", dan sebagai ganti alamat ` +
+  `tulis "belum ada tautan — perlu dicek". Gunanya memberi tahu yang memeriksa ` +
+  `harus mencari ke mana.\n` +
   `4. Jangan pernah menulis dari ingatan: alamat web, judul artikel jurnal ` +
   `beserta nama jurnalnya, nama penulis, tahun terbit, nomor jilid, nomor ` +
   `halaman, atau angka statistik. Kalimat yang terasa butuh angka ditulis ` +
   `"[angka perlu dicek]".\n` +
-  `5. Usahakan klaim penting berdiri di atas dua kaki: satu rujukan nasional ` +
-  `dan satu internasional. Tulis dua baris untuk klaim yang sama bila keduanya ada.`;
+  `5. Usahakan ada rujukan nasional sekaligus internasional untuk klaim yang ` +
+  `penting — pedoman Indonesia mengikat praktiknya, rujukan internasional jadi ` +
+  `dasarnya.`;
 
 /**
  * Yang nasional lebih dulu, lalu yang internasional.
@@ -76,9 +76,9 @@ export async function daftarSumberUntukAI(klien?: Klien): Promise<string> {
     return (
       `DAFTAR SUMBER RUJUKAN\n\n(kosong — belum ada sumber yang didaftarkan)\n\n` +
       `Karena daftarnya kosong, TIDAK ADA satu pun alamat web yang boleh Anda ` +
-      `tulis. Seluruh baris pada tabel sumber diberi Status ` +
-      `"Usulan — perlu diperiksa" dan kolom Tautan diisi tanda hubung. Lembaga ` +
-      `dan nama pedomannya tetap disebutkan supaya bisa dicari.`
+      `tulis. Seluruh sumber ditulis diawali kata "Usulan:", dan sebagai ganti ` +
+      `alamat tulis "belum ada tautan — perlu dicek". Lembaga dan nama ` +
+      `pedomannya tetap disebutkan supaya bisa dicari.`
     );
   }
 

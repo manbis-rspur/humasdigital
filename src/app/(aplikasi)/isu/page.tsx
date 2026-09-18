@@ -142,8 +142,8 @@ export default async function HalamanIsu() {
           <p className="mt-1 max-w-2xl text-sm text-tinta-2">
             Dipakai AI untuk mengisi tabel sumber pada kalender konten dan
             tiap konsep konten. <strong>Alamat</strong> hanya boleh disalin dari
-            daftar ini — klaim yang tidak tercakup ditandai &ldquo;Usulan —
-            perlu diperiksa&rdquo; beserta nama pedoman yang patut dicari, tanpa
+            daftar ini — sumber yang tidak tercakup ditulis diawali
+            &ldquo;Usulan:&rdquo; beserta nama pedoman yang patut dicari, tanpa
             alamat. Isinya ditempel sendiri dari halaman yang memang sudah
             dibuka.
           </p>
@@ -159,8 +159,8 @@ export default async function HalamanIsu() {
         {daftarSumber.length === 0 ? (
           <p className="rounded-xl border-l-4 border-oker bg-[#f6efe2] px-4 py-3 text-sm">
             Belum ada sumber terdaftar. Selama kosong, tidak ada satu pun
-            alamat yang boleh ditulis AI — seluruh baris tabel sumbernya
-            bertanda &ldquo;Usulan — perlu diperiksa&rdquo;.
+            alamat yang boleh ditulis AI — seluruh sumbernya bertanda
+            &ldquo;Usulan:&rdquo; tanpa tautan.
           </p>
         ) : (
           <ul className="flex flex-col gap-1.5">
