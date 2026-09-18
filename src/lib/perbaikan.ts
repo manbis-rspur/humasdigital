@@ -1,6 +1,6 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { susunDenganAI, type Bagian } from "@/lib/ai";
+import { susunDenganAI, type Bagian, type Jejak } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { daftarLayananUntukAI } from "@/lib/layanan-data";
@@ -223,7 +223,12 @@ export async function mintaPerbaikan({
     // Suhu tinggi membuat AI ikut mengubah kalimat yang tidak
     // diminta, dan perubahan diam-diam itulah yang paling sulit
     // ketahuan.
-    const mentah = tanpaPagar(await susunDenganAI(perintah, INSTRUKSI_SUNTING, 0.1));
+    // Wadah kosong; diisi lapisan AI dengan nama mesin yang
+    // akhirnya mengerjakan.
+    const jejak: Jejak = {};
+    const mentah = tanpaPagar(
+      await susunDenganAI(perintah, INSTRUKSI_SUNTING, 0.1, jejak),
+    );
     const hasil = pakaiSumber ? await bersihkanAlamat(mentah, klien) : mentah;
 
     // Kadang AI mengembalikan potongan yang diubah saja, bukan
@@ -241,6 +246,12 @@ export async function mintaPerbaikan({
     const hilang = barisHilang(naskah, hasil);
     const banyak = semula > 0 && hilang > Math.max(2, semula * 0.3);
 
+    const dicadangkan =
+      jejak.mesin && !jejak.mesin.startsWith("gemini")
+        ? `Gemini sedang padat, jadi perbaikan ini dikerjakan mesin cadangan (${jejak.mesin}). ` +
+          `Gaya bahasanya bisa terasa sedikit berbeda — periksa dulu sebelum disimpan. `
+        : "";
+
     const peringatan = menyusut
       ? "Hasilnya jauh lebih pendek dari naskah sebelumnya — mungkin AI hanya " +
         "mengembalikan bagian yang diubah. Periksa dulu seluruhnya; kalau ada " +
@@ -255,7 +266,9 @@ export async function mintaPerbaikan({
     return {
       hasil,
       pesan: null,
-      peringatan,
+      peringatan: dicadangkan
+        ? `${dicadangkan}${peringatan ?? ""}`.trim()
+        : peringatan,
       // Selalu dilaporkan, bukan cuma saat mencurigakan — orang
       // yang tahu "2 dari 14 baris berubah" tidak perlu membaca
       // ulang seluruh tabel untuk memastikan.

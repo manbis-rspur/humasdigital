@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { getPenggunaAktif } from "@/lib/auth";
 import { izinHumas } from "@/lib/akses";
 import { createClient } from "@/lib/supabase/server";
-import { susunDenganAI, type Bagian } from "@/lib/ai";
+import { susunDenganAI, type Bagian, type Jejak } from "@/lib/ai";
 import { daftarDokterUntukAI } from "@/lib/dokter-data";
 import { usulanUntukAI } from "@/lib/isu-data";
 import { bersihkanAlamat, daftarSumberUntukAI } from "@/lib/sumber-data";
@@ -380,9 +380,12 @@ export async function jalankanModul(
     });
   }
 
+  // Diisi lapisan AI dengan nama mesin yang akhirnya mengerjakan.
+  const jejak: Jejak = {};
+
   let hasil: string;
   try {
-    hasil = await susunDenganAI(perintah, modul.instruksi_sistem);
+    hasil = await susunDenganAI(perintah, modul.instruksi_sistem, 0.7, jejak);
     if (modul.pakai_sumber === true) hasil = await bersihkanAlamat(hasil);
   } catch (galat) {
     const pesan = galat instanceof Error ? galat.message : "Gagal menghubungi Gemini.";
@@ -424,7 +427,18 @@ export async function jalankanModul(
     .single();
 
   revalidatePath("/riwayat");
-  return { pesan: null, hasil, judul, riwayatId: tersimpan?.id ?? null };
+  return {
+    pesan: null,
+    hasil,
+    judul,
+    riwayatId: tersimpan?.id ?? null,
+    peringatan:
+      jejak.mesin && !jejak.mesin.startsWith("gemini")
+        ? `Gemini sedang padat, jadi naskah ini dikerjakan mesin cadangan (${jejak.mesin}). ` +
+          `Aturan modulnya tetap diikuti, tapi gaya bahasanya bisa terasa sedikit ` +
+          `berbeda — periksa dulu sebelum dipakai.`
+        : undefined,
+  };
 }
 
 export type HasilModul = { pesan: string | null; berhasil: string | null };
